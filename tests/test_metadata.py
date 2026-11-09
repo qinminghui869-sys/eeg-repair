@@ -46,7 +46,8 @@ def test_missing_unit_and_metadata_conflict(tmp_path):
         load_config(config, source=path)
 
 
-REAL_ROOT = Path(os.environ.get("EEG_TEST_DATA", "/home/baai/qmh/dataset/L3/emg_test"))
+_REAL_ROOT_ENV = os.environ.get("EEG_TEST_DATA")
+REAL_ROOT = Path(_REAL_ROOT_ENV) if _REAL_ROOT_ENV else Path()
 REAL_FILES = sorted(REAL_ROOT.rglob("observation.eeg.parquet")) if REAL_ROOT.exists() else []
 
 

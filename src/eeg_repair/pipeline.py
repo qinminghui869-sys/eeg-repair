@@ -3,6 +3,8 @@
 from pathlib import Path
 from datetime import datetime, timezone
 import importlib.metadata
+import json
+import hashlib
 
 import mne
 import numpy as np
@@ -13,7 +15,23 @@ from .config import Config
 from .parquet import publish, read_recording, replace_signals
 
 
+def montage_evidence(cfg: Config) -> dict:
+    if not cfg.montage_csv:
+        return {"kind": "standard_template", "name": cfg.montage}
+    digest = hashlib.sha256(Path(cfg.montage_csv).read_bytes()).hexdigest()
+    evidence = {"kind": "custom_csv", "csv_sha256": digest}
+    if cfg.montage_report:
+        report = json.loads(Path(cfg.montage_report).read_text(encoding="utf-8"))
+        if report.get("csv_sha256") != digest:
+            raise ValueError("montage CSV hash does not match registration report")
+        if report.get("coord_frame") != "head" or report.get("unit") != "m":
+            raise ValueError("montage report must specify head coordinates in meters")
+        evidence["registration"] = report
+    return evidence
+
+
 def prepare_montage(names: list[str], cfg: Config):
+    montage_evidence(cfg)
     montage = (
         alg.load_montage(cfg.montage_csv)
         if cfg.montage_csv
@@ -68,6 +86,7 @@ def repair_file(
     scalp, names = alg.scalp_names(list(cfg.channels))
     if len(names) < 4:
         raise ValueError("require at least four scalp electrodes")
+    evidence = montage_evidence(cfg)
     montage = prepare_montage(names, cfg)
     if impedance is None:
         candidate = record.path.with_name("observation.eeg_impedance.parquet")
@@ -78,6 +97,7 @@ def repair_file(
     if dry_run:
         return {
             "status": "VALIDATED",
+            "montage": evidence,
             "source": str(record.path),
             "scalp_channels": len(names),
             "samples": record.table.num_rows,
@@ -123,6 +143,7 @@ def repair_file(
         "status": "SUCCESS",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "config": cfg.to_dict(),
+        "montage": evidence,
         "qc": qc,
         "impedance_bad_channels": prior,
         "bad_channels": bads,

@@ -20,6 +20,7 @@ class Config:
     notch_hz: tuple[float, ...] = (50.0, 100.0)
     montage: str = "standard_1020"
     montage_csv: str | None = None
+    montage_report: str | None = None
     ica_enabled: bool = True
     ica_components: int = 32
     min_duration_s: float = 10.0
@@ -28,6 +29,8 @@ class Config:
     impedance_unit: str = "ohm"
 
     def __post_init__(self):
+        if self.montage_report and not self.montage_csv:
+            raise ValueError("montage_report requires montage_csv")
         if (
             not self.channels
             or len(self.channels) > 256
@@ -96,6 +99,7 @@ def load_config(path: str | Path | None = None, *, source: str | Path | None = N
             if not isinstance(data[name], list):
                 raise ValueError(f"{name} must be a list")
             data[name] = tuple(data[name])
-    if data.get("montage_csv"):
-        data["montage_csv"] = str(((path.parent if path else Path.cwd()) / data["montage_csv"]).resolve())
+    for key in ("montage_csv", "montage_report"):
+        if data.get(key):
+            data[key] = str(((path.parent if path else Path.cwd()) / data[key]).resolve())
     return Config(**data)

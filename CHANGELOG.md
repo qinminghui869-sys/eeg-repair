@@ -18,4 +18,7 @@
 - 数据集模式输出完整独立副本，更新 meta/info.json 处理记录和 EEG 单位。
 - 重算逐 episode 的 EEG 统计，保留其他模态、时间轴、索引和路径模板。
 - 数据集级失败回滚，全部 episode 成功后发布；独立 Parquet 模式保持兼容。
-- 增加指定 8 个真实 EEG 文件的数据契约测试和数据集输出回归测试。
+- 增加可选真实 EEG 数据契约测试（`EEG_TEST_DATA`）和数据集输出回归测试。
+- 暂定坐标资产与试运行配置改为通用命名（`configs/provisional.yaml`）。
+- 数据集模式把 `observation.eeg_repair.parquet` 写回原数据目录，并在该数据集的 `meta/info.json` 登记对应特征。原始 `observation.eeg.parquet` 不覆盖。
+- 增加通用脚本 `scripts/repair.sh`，依次执行预检、修复和结构质检。

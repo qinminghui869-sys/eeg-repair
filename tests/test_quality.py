@@ -9,7 +9,8 @@ import pytest
 
 from eeg_repair.quality import check_recording, main
 
-REAL_ROOT = Path(os.environ.get("EEG_TEST_DATA", "/home/baai/qmh/dataset/L3/emg_test"))
+_REAL_ROOT_ENV = os.environ.get("EEG_TEST_DATA")
+REAL_ROOT = Path(_REAL_ROOT_ENV) if _REAL_ROOT_ENV else Path()
 REAL_FILES = (
     sorted(REAL_ROOT.glob("*/data/chunk-000/episode_000000/observation.eeg.parquet"))
     if REAL_ROOT.exists()

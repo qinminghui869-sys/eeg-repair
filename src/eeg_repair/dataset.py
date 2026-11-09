@@ -1,7 +1,8 @@
-"""Publish complete mf-LeRobot datasets with repaired EEG and fresh metadata."""
+"""Add repaired EEG beside the source Parquet and update dataset metadata in place."""
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -18,7 +19,15 @@ def dataset_root(path):
 
 
 def write_json(path, value):
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix=".eeg-meta-", dir=path.parent)
+    os.close(fd)
+    temporary = Path(name)
+    temporary.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8"
+    )
+    os.replace(temporary, path)
 
 
 def audit_relative_path(episode_index: int, *, n_files: int) -> Path:
@@ -28,6 +37,14 @@ def audit_relative_path(episode_index: int, *, n_files: int) -> Path:
     return Path(f"meta/episode_{int(episode_index):06d}/observation.eeg.audit.json")
 
 
+REPAIR_NAME = "observation.eeg_repair.parquet"
+REPAIR_FEATURE = "observation.eeg_repair"
+
+
+def repaired_relative(source_relative: Path) -> Path:
+    return source_relative.with_name(REPAIR_NAME)
+
+
 def episode_index(path: Path) -> int:
     episodes = pq.read_table(path, columns=["episode_index"])["episode_index"].unique().to_pylist()
     if len(episodes) != 1:
@@ -35,14 +52,11 @@ def episode_index(path: Path) -> int:
     return int(episodes[0])
 
 
-def repair_dataset(root, destination, paths, config=None, *, dry_run=False, impedance=None):
-    root, destination = Path(root).resolve(), Path(destination).resolve()
-    if destination == root or root in destination.parents or destination in root.parents:
-        raise ValueError("dataset output must be outside source tree")
-    if destination.exists():
-        raise FileExistsError(f"dataset output already exists: {destination}")
+def repair_dataset(root, paths, config=None, *, dry_run=False, impedance=None):
+    """Write observation.eeg_repair.parquet next to each source file. Never overwrite observation.eeg.parquet."""
+    root = Path(root).resolve()
     paths = [Path(p).resolve() for p in paths]
-    all_paths = sorted(root.rglob("observation.eeg.parquet"))
+    all_paths = sorted(p for p in root.rglob("observation.eeg.parquet") if ".eeg-dataset-" not in p.parts)
     if sorted(paths) != all_paths:
         raise ValueError("dataset mode requires all EEG episodes; pass the dataset root")
     configs = [load_config(config, source=p) for p in paths]
@@ -50,25 +64,31 @@ def repair_dataset(root, destination, paths, config=None, *, dry_run=False, impe
     if len(set(episodes)) != len(episodes):
         raise ValueError("require unique episode_index per EEG file")
     audits = [audit_relative_path(index, n_files=len(paths)) for index in episodes]
-    # Validate every episode before copying potentially large videos.
-    for path, cfg, audit in zip(paths, configs, audits):
-        repair_file(
-            path,
-            destination / path.relative_to(root),
-            cfg,
-            dry_run=True,
-            impedance=impedance,
-            audit_path=destination / audit,
-        )
+    relatives = [repaired_relative(path.relative_to(root)) for path in paths]
+    finals = [root / relative for relative in relatives]
+    audit_paths = [root / audit for audit in audits]
+    for final, audit_path in zip(finals, audit_paths):
+        if final.exists() or audit_path.exists():
+            raise FileExistsError(f"repair output already exists: {final}")
+    if (root / "meta/stats.json").exists():
+        raise ValueError("legacy meta/stats.json is unsupported; refusing stale global EEG statistics")
+    for path, cfg, final, audit_path in zip(paths, configs, finals, audit_paths):
+        repair_file(path, final, cfg, dry_run=True, impedance=impedance, audit_path=audit_path)
     if dry_run:
         return {"status": "VALIDATED", "files": len(paths)}
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    stage = Path(tempfile.mkdtemp(prefix=".eeg-dataset-", dir=destination.parent))
+    stage = Path(tempfile.mkdtemp(prefix=".eeg-dataset-", dir=root))
+    published = []
+    info_path = root / "meta/info.json"
+    stats_path = root / "meta/episodes_stats.jsonl"
+    info_backup = info_path.read_bytes()
+    stats_backup = stats_path.read_bytes() if stats_path.exists() else None
     try:
         records = []
-        stats = {}
-        for path, cfg, index, audit in zip(paths, configs, episodes, audits):
-            relative = path.relative_to(root)
+        computed = {}
+        staged = []
+        for path, cfg, index, audit, relative, final, audit_path in zip(
+            paths, configs, episodes, audits, relatives, finals, audit_paths
+        ):
             target = stage / relative
             repair_file(path, target, cfg, impedance=impedance, audit_path=stage / audit)
             table = pq.read_table(target)
@@ -78,71 +98,70 @@ def repair_dataset(root, destination, paths, config=None, *, dry_run=False, impe
                 else np.asarray(table[cfg.signal_column].to_pylist())
             )
             values = values.astype(np.float64)
-            stats[index] = {
+            computed[index] = {
                 key: getattr(values, key)(axis=0).tolist() for key in ("min", "max", "mean", "std")
             }
-            stats[index]["count"] = [len(values)]
-            records.append(
-                {
-                    "episode_index": index,
-                    "data": relative.as_posix(),
-                    "audit": audit.as_posix(),
-                }
-            )
-        # Copies, never hardlinks: later changes to output cannot alter the source.
-        for source in root.rglob("*"):
-            relative = source.relative_to(root)
-            target = stage / relative
-            if source.is_symlink():
-                raise ValueError(f"dataset symlinks are unsupported: {relative}")
-            if source.is_dir():
-                target.mkdir(parents=True, exist_ok=True)
-            elif source.is_file() and source not in paths:
-                if target.exists():
-                    raise ValueError(f"source conflicts with generated output: {relative}")
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, target)
-        info_path = stage / "meta/info.json"
-        info = json.loads(info_path.read_text(encoding="utf-8"))
-        feature = info["features"]["observation.eeg"]
-        feature["unit"] = configs[0].unit
-        # Existing names, shape, dtype, fps, paths and time-alignment fields stay intact.
+            computed[index]["count"] = [len(values)]
+            records.append({"episode_index": index, "data": relative.as_posix(), "audit": audit.as_posix()})
+            staged.append((target, final, stage / audit, audit_path))
+        for source, final, audit_source, audit_final in staged:
+            final.parent.mkdir(parents=True, exist_ok=True)
+            audit_final.parent.mkdir(parents=True, exist_ok=True)
+            os.link(audit_source, audit_final)
+            published.append(audit_final)
+            os.link(source, final)
+            published.append(final)
+        info = json.loads(info_backup)
+        source_feature = info["features"]["observation.eeg"]
+        if REPAIR_FEATURE in info["features"]:
+            raise ValueError("observation.eeg_repair already present in meta/info.json")
+        repaired_feature = json.loads(json.dumps(source_feature))
+        repaired_feature["unit"] = configs[0].unit
+        info["features"][REPAIR_FEATURE] = repaired_feature
         info["eeg_repair"] = {
             "version": 1,
             "status": "complete",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "feature": "observation.eeg",
+            "feature": REPAIR_FEATURE,
+            "source_feature": "observation.eeg",
             "records": records,
         }
         write_json(info_path, info)
-        stats_path = stage / "meta/episodes_stats.jsonl"
         rows = (
-            [json.loads(line) for line in stats_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-            if stats_path.exists()
+            [json.loads(line) for line in stats_backup.decode().splitlines() if line.strip()]
+            if stats_backup is not None
             else []
         )
         seen = set()
         for row in rows:
             episode = row["episode_index"]
-            if episode in stats:
+            if episode in computed:
                 if episode in seen:
                     raise ValueError("duplicate episode in episodes_stats.jsonl")
-                row.setdefault("stats", {})["observation.eeg"] = stats[episode]
+                row.setdefault("stats", {})[REPAIR_FEATURE] = computed[episode]
                 seen.add(episode)
         rows.extend(
-            {"episode_index": e, "stats": {"observation.eeg": s}} for e, s in stats.items() if e not in seen
+            {"episode_index": e, "stats": {REPAIR_FEATURE: s}} for e, s in computed.items() if e not in seen
         )
-        stats_path.write_text(
+        stats_path.parent.mkdir(parents=True, exist_ok=True)
+        fd, name = tempfile.mkstemp(prefix=".eeg-meta-", dir=stats_path.parent)
+        os.close(fd)
+        temporary = Path(name)
+        temporary.write_text(
             "".join(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n" for row in rows),
             encoding="utf-8",
         )
-        # Legacy global statistics cannot describe repaired signals.
-        global_stats = stage / "meta/stats.json"
-        if global_stats.exists():
-            raise ValueError("legacy meta/stats.json is unsupported; refusing stale global EEG statistics")
-        if destination.exists():
-            raise FileExistsError(destination)
-        stage.rename(destination)
+        os.replace(temporary, stats_path)
+    except BaseException:
+        for path in reversed(published):
+            path.unlink(missing_ok=True)
+        if info_path.exists():
+            info_path.write_bytes(info_backup)
+        if stats_backup is None:
+            stats_path.unlink(missing_ok=True)
+        else:
+            stats_path.write_bytes(stats_backup)
+        raise
     finally:
         if stage.exists():
             shutil.rmtree(stage)

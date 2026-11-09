@@ -55,10 +55,9 @@ def main(argv=None) -> int:
             groups.setdefault(root, []).append(path)
     failed = 0
     for root, members in groups.items():
-        relative = root.relative_to(source) if source.is_dir() and source in root.parents else Path()
         try:
             result = repair_dataset(
-                root, output / relative, members, args.config, dry_run=args.dry_run, impedance=args.impedance
+                root, members, args.config, dry_run=args.dry_run, impedance=args.impedance
             )
             logging.info("%s dataset %s", result["status"], root)
         except Exception as exc:

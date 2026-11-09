@@ -1,0 +1,8 @@
+# Provisional montage for trial runs when measured coordinates are unavailable.
+# Confirm unit per batch before use. Channel order and sampling rate come from metadata.
+unit: uV
+layout: columns
+montage: colin27_1005
+montage_csv: montages/provisional_full.csv
+montage_report: montages/provisional_full.registration.json
+ica_enabled: true

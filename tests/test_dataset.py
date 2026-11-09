@@ -49,34 +49,43 @@ def test_complete_dataset_and_fresh_stats(tmp_path):
     path, original = fixture(root)
     config = tmp_path / "cfg.yaml"
     config.write_text("ica_enabled: false\n")
+    original_bytes = path.read_bytes()
     out = tmp_path / "out"
     assert main([str(root), "--output-dir", str(out), "--config", str(config)]) == 0
-    updated = json.loads((out / "meta/info.json").read_text())
-    assert updated["features"] == original["features"]
+    assert path.read_bytes() == original_bytes
+    assert not out.exists()
+    updated = json.loads((root / "meta/info.json").read_text())
+    assert updated["features"]["observation.eeg"] == original["features"]["observation.eeg"]
+    repaired = updated["features"]["observation.eeg_repair"]
+    assert repaired["names"] == original["features"]["observation.eeg"]["names"]
+    assert repaired["unit"] == "uV"
     assert updated["data_path"] == original["data_path"]
     assert updated["eeg_repair"]["status"] == "complete"
-    target = out / path.relative_to(root)
+    assert updated["eeg_repair"]["feature"] == "observation.eeg_repair"
+    target = path.with_name("observation.eeg_repair.parquet")
     assert target.exists()
-    assert (out / "meta/observation.eeg.audit.json").exists()
+    assert (root / "meta/observation.eeg.audit.json").exists()
     assert not target.with_suffix(".audit.json").exists()
+    assert updated["eeg_repair"]["records"][0]["data"].endswith("observation.eeg_repair.parquet")
     assert updated["eeg_repair"]["records"][0]["audit"] == "meta/observation.eeg.audit.json"
-    assert (out / "video.mp4").read_bytes() == b"video fixture"
-    assert json.loads((root / "meta/info.json").read_text()) == original
-    stats = json.loads((out / "meta/episodes_stats.jsonl").read_text())["stats"]
+    assert (root / "video.mp4").read_bytes() == b"video fixture"
+    stats = json.loads((root / "meta/episodes_stats.jsonl").read_text())["stats"]
     values = np.stack(
         [pq.read_table(target)[n].to_numpy() for n in original["features"]["observation.eeg"]["names"]],
         axis=1,
     )
-    np.testing.assert_allclose(stats["observation.eeg"]["mean"], values.mean(axis=0))
+    assert stats["observation.eeg"] == {"mean": [999]}
+    np.testing.assert_allclose(stats["observation.eeg_repair"]["mean"], values.mean(axis=0))
     assert stats["other"] == {"count": [10]}
 
 
 def test_failure_and_dry_run_publish_nothing(tmp_path, monkeypatch):
     root = tmp_path / "input"
     path, _ = fixture(root)
-    out = tmp_path / "out"
-    repair_dataset(root, out, [path], dry_run=True)
-    assert not out.exists()
+    original_info = (root / "meta/info.json").read_bytes()
+    original_eeg = path.read_bytes()
+    repair_dataset(root, [path], dry_run=True)
+    assert not path.with_name("observation.eeg_repair.parquet").exists()
 
     def fail(*args, **kwargs):
         if not kwargs.get("dry_run"):
@@ -84,8 +93,10 @@ def test_failure_and_dry_run_publish_nothing(tmp_path, monkeypatch):
 
     monkeypatch.setattr("eeg_repair.dataset.repair_file", fail)
     with pytest.raises(ValueError, match="repair failed"):
-        repair_dataset(root, out, [path])
-    assert not out.exists()
-    assert not list(tmp_path.glob(".eeg-dataset-*"))
+        repair_dataset(root, [path])
+    assert path.read_bytes() == original_eeg
+    assert (root / "meta/info.json").read_bytes() == original_info
+    assert not path.with_name("observation.eeg_repair.parquet").exists()
+    assert not list(root.glob(".eeg-dataset-*"))
     with pytest.raises(ValueError, match="all EEG"):
-        repair_dataset(root, out, [])
+        repair_dataset(root, [])
