@@ -1,0 +1,10 @@
+# 8 通道设备接入模板：请填写真实电极名称、顺序、采样率与单位。
+# 不使用 CH1→Fp1 等猜测映射。必须先完成配置，才能运行。
+channels: []
+sfreq: null
+unit: null
+layout: columns
+montage: standard_1020
+montage_csv: null
+ica_enabled: true
+ica_components: 8

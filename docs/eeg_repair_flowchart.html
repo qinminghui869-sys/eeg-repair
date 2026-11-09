@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<style id="lumi-runtime">
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,300..700;1,300..700&family=Google+Sans+Code:ital,wght,MONO@0,300..700,0..1;1,300..700,0..1&display=swap');
+
+:root {
+  --body-bg: #fdfcfc;
+  --ff-sans: 'Google Sans Flex', 'Google Sans Text', 'Google Sans', system-ui, -apple-system, sans-serif;
+  --ff-mono: 'Google Sans Code', 'Google Sans Mono', monospace;
+
+  --lumi-sys-spacing--xxs: 2px;
+  --lumi-sys-spacing--xs: 4px;
+  --lumi-sys-spacing--s: 8px;
+  --lumi-sys-spacing--m: 12px;
+  --lumi-sys-spacing--l: 16px;
+  --lumi-sys-spacing--xl: 20px;
+  --lumi-sys-spacing--xxl: 24px;
+
+  --lumi-sys-shape--small: 8px;
+  --lumi-sys-shape--medium: 12px;
+  --lumi-sys-shape--large: 16px;
+  --lumi-sys-shape--full: 999px;
+
+  --lumi-sys-elevation--level1: 0 0 20px 0 rgba(0, 0, 0, 0.04);
+
+  --lumi-sys-color--surface: #fdfcfc;
+  --lumi-sys-color--surface-dim: #f2f0f0;
+  --lumi-sys-color--surface-bright: #ffffff;
+  --lumi-sys-color--surface-container: #f2f0f0;
+  --lumi-sys-color--surface-container-high: #e6e6e6;
+  --lumi-sys-color--on-surface: #000000;
+  --lumi-sys-color--on-surface-default: #000000;
+  --lumi-sys-color--on-surface-variant: rgba(0, 0, 0, 0.58);
+  --lumi-sys-color--on-surface-low: rgba(0, 0, 0, 0.08);
+  --lumi-sys-color--positive: #008052;
+  --lumi-sys-color--positive-container: #daf9d4;
+  --lumi-sys-color--error: #de2d29;
+  --lumi-sys-color--error-container: #ffdeec;
+  --lumi-sys-color--accent: #9dd2ff;
+  --lumi-sys-color--accent-container: #dcf1ff;
+  --lumi-sys-color--accent-fixed: #3186ff;
+  --lumi-sys-color--primary: #2575fc;
+  --lumi-sys-color--outline: #727676;
+  --lumi-sys-color--stroke-default: #e3e3e3;
+
+  --surface: var(--lumi-sys-color--surface);
+  --surface-dim: var(--lumi-sys-color--surface-dim);
+  --surface-bright: var(--lumi-sys-color--surface-bright);
+  --surface-container-high: var(--lumi-sys-color--surface-container-high);
+  --on-surface: var(--lumi-sys-color--on-surface);
+  --on-surface-variant: var(--lumi-sys-color--on-surface-variant);
+  --primary: var(--lumi-sys-color--primary);
+  --accent-container: var(--lumi-sys-color--accent-container);
+  --accent-fixed: var(--lumi-sys-color--accent-fixed);
+  --error: var(--lumi-sys-color--error);
+  --error-container: var(--lumi-sys-color--error-container);
+  --outline: var(--lumi-sys-color--outline);
+  --stroke-default: var(--lumi-sys-color--stroke-default);
+  --r-s: var(--lumi-sys-shape--small);
+  --r-m: var(--lumi-sys-shape--medium);
+  --r-l: var(--lumi-sys-shape--large);
+  --r-full: var(--lumi-sys-shape--full);
+}
+
+:root[data-theme="dark"], body.dark-mode {
+  --body-bg: #0f0f0f;
+  --lumi-sys-color--surface: #0f0f0f;
+  --lumi-sys-color--surface-dim: #161618;
+  --lumi-sys-color--surface-bright: #1e1e22;
+  --lumi-sys-color--surface-container: #161618;
+  --lumi-sys-color--surface-container-high: #26262b;
+  --lumi-sys-color--on-surface: #e4e4e7;
+  --lumi-sys-color--on-surface-default: #e4e4e7;
+  --lumi-sys-color--on-surface-variant: rgba(255, 255, 255, 0.60);
+  --lumi-sys-color--error: #ff5a54;
+  --lumi-sys-color--error-container: #3c0a0a;
+  --lumi-sys-color--accent: #1f3b9b;
+  --lumi-sys-color--accent-container: #192967;
+  --lumi-sys-color--accent-fixed: #5ca0ff;
+  --lumi-sys-color--primary: #7cc0ff;
+  --lumi-sys-color--outline: #8e9094;
+  --lumi-sys-color--stroke-default: #2d2f38;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --body-bg: #0f0f0f;
+    --lumi-sys-color--surface: #0f0f0f;
+    --lumi-sys-color--surface-dim: #161618;
+    --lumi-sys-color--surface-bright: #1e1e22;
+    --lumi-sys-color--surface-container: #161618;
+    --lumi-sys-color--surface-container-high: #26262b;
+    --lumi-sys-color--on-surface: #e4e4e7;
+    --lumi-sys-color--on-surface-default: #e4e4e7;
+    --lumi-sys-color--on-surface-variant: rgba(255, 255, 255, 0.60);
+    --lumi-sys-color--error: #ff5a54;
+    --lumi-sys-color--error-container: #3c0a0a;
+    --lumi-sys-color--accent: #1f3b9b;
+    --lumi-sys-color--accent-container: #192967;
+    --lumi-sys-color--accent-fixed: #5ca0ff;
+    --lumi-sys-color--primary: #7cc0ff;
+    --lumi-sys-color--outline: #8e9094;
+    --lumi-sys-color--stroke-default: #2d2f38;
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  background: var(--body-bg) !important;
+  color: var(--on-surface) !important;
+  font-family: var(--ff-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+svg text { stroke: none; paint-order: fill; }
+
+button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 14px;
+  font-family: var(--ff-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--on-surface);
+  background-color: var(--surface-bright);
+  border: 1px solid var(--stroke-default);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+button:hover {
+  background-color: var(--surface-container-high);
+}
+button.is-selected {
+  background-color: var(--accent-container);
+  color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+</style>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EEG 预处理与坏道球面插值流程图</title>
+  <style>
+    .widget-container {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .header-card {
+      padding: 14px 18px;
+      background: var(--surface-bright);
+      border: 1px solid var(--stroke-default);
+      border-radius: var(--r-l, 16px);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+
+    .header-badge {
+      font-family: var(--ff-mono);
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: var(--r-full);
+      background: var(--accent-container);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .header-subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: var(--on-surface-variant);
+    }
+
+    .control-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface-dim);
+      border-radius: var(--r-m, 12px);
+      border: 1px solid var(--stroke-default);
+      position: sticky;
+      top: 8px;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+
+    .path-button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .nav-button-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .step-counter {
+      font-family: var(--ff-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--on-surface);
+      padding: 0 6px;
+    }
+
+    .diagram-card {
+      background: var(--surface-bright);
+      border: 1px solid var(--stroke-default);
+      border-radius: var(--r-l, 16px);
+      padding: 16px 12px;
+      position: relative;
+    }
+
+    .svg-viewport-wrapper {
+      width: 100%;
+      height: auto;
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+
+    .svg-viewport-wrapper svg {
+      display: block;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 680px;
+      height: auto;
+    }
+
+    .node-group {
+      cursor: pointer;
+      transition: opacity 0.2s ease, filter 0.2s ease;
+    }
+
+    .node-group:hover .node-shape {
+      filter: brightness(1.05);
+      stroke-width: 2.2px !important;
+    }
+
+    .node-group.is-dimmed {
+      opacity: 0.20;
+    }
+
+    .node-group.is-active .node-shape {
+      stroke-width: 2.6px !important;
+      stroke: var(--primary) !important;
+      filter: drop-shadow(0 0 6px rgba(37, 117, 252, 0.45));
+    }
+
+    .node-group.is-active.is-error .node-shape {
+      stroke: var(--error) !important;
+      filter: drop-shadow(0 0 6px rgba(222, 45, 41, 0.45));
+    }
+
+    .edge-path {
+      transition: opacity 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
+    }
+
+    .edge-path.is-dimmed {
+      opacity: 0.12;
+    }
+
+    .edge-path.is-animated {
+      stroke-dasharray: 6 4 !important;
+      animation: edgeFlow 0.8s linear infinite;
+    }
+
+    @keyframes edgeFlow {
+      from { stroke-dashoffset: 20; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .edge-label-pill {
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .edge-label-pill.is-dimmed {
+      opacity: 0.15;
+    }
+
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 10px 14px;
+      background: var(--surface-dim);
+      border: 1px solid var(--stroke-default);
+      border-radius: var(--r-m, 12px);
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .detail-panel {
+      background: var(--surface-bright);
+      border: 1.5px solid var(--primary);
+      border-radius: var(--r-l, 16px);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--lumi-sys-elevation--level1);
+      margin-bottom: 16px;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid var(--stroke-default);
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .detail-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .detail-id-tag {
+      font-family: var(--ff-mono);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--r-s, 8px);
+      background: var(--accent-container);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .detail-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+
+    .detail-stage-pill {
+      font-size: 12px;
+      font-family: var(--ff-mono);
+      color: var(--on-surface-variant);
+      background: var(--surface-dim);
+      padding: 3px 10px;
+      border-radius: var(--r-full);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .detail-block {
+      background: var(--surface-dim);
+      border-radius: var(--r-m, 12px);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .detail-block-title {
+      font-size: 11px;
+      font-family: var(--ff-mono);
+      color: var(--on-surface-variant);
+      font-weight: 600;
+    }
+
+    .detail-block-content {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--on-surface);
+    }
+
+    .detail-block-content code {
+      font-family: var(--ff-mono);
+      font-size: 12px;
+      background: var(--surface-bright);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--stroke-default);
+    }
+
+    .detail-formula {
+      font-family: var(--ff-mono);
+      font-size: 13px;
+      background: var(--surface-bright);
+      padding: 8px 12px;
+      border-radius: var(--r-s, 8px);
+      border-left: 3px solid var(--primary);
+      color: var(--on-surface);
+      overflow-x: auto;
+    }
+
+    /* ---- 节点说明的结构化排版：摘要句 + 分条逻辑 + 要点注记 ---- */
+    .desc-lead {
+      margin-bottom: 9px;
+    }
+
+    .desc-list {
+      margin: 0 0 2px;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .desc-list > li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 9px;
+      align-items: start;
+    }
+
+    /* 序号/标记胶囊：有序步骤用数字，并列条目用圆点 */
+    .desc-step {
+      font-family: var(--ff-mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1;
+      color: var(--primary);
+      background: var(--surface-bright);
+      border: 1px solid var(--stroke-default);
+      border-radius: var(--r-full, 999px);
+      min-width: 19px;
+      padding: 4px 6px;
+      text-align: center;
+      margin-top: 1px;
+    }
+
+    .desc-step.is-dot {
+      color: var(--on-surface-variant);
+      border-style: dashed;
+    }
+
+    .desc-key {
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+
+    .desc-sub {
+      margin: 5px 0 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      color: var(--on-surface-variant);
+      font-size: 12.5px;
+    }
+
+    .desc-sub > li::before {
+      content: '–';
+      margin-right: 6px;
+      color: var(--on-surface-low, var(--on-surface-variant));
+    }
+
+    /* 注记块：设计取舍、已知局限、与上下游的衔接 */
+    .desc-note {
+      margin-top: 10px;
+      padding: 8px 11px;
+      background: var(--surface-bright);
+      border-left: 3px solid var(--accent-fixed, var(--primary));
+      border-radius: var(--r-s, 8px);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--on-surface-variant);
+    }
+
+    .desc-note + .desc-note {
+      margin-top: 6px;
+    }
+
+    .desc-note code,
+    .desc-list code,
+    .desc-lead code {
+      font-family: var(--ff-mono);
+      font-size: 11.5px;
+      background: var(--surface-dim);
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--stroke-default);
+    }
+  </style>
+</head>
+<body>
+  <div class="widget-container">
+    
+    <!-- Header -->
+    <div class="header-card">
+      <div class="header-title-row">
+        <h2 class="header-title">EEG 预处理与坏道球面插值 DAG 架构</h2>
+        <span class="header-badge">14 节点 · 16 有向边</span>
+      </div>
+      <p class="header-subtitle">复合滤波 → 阻抗检测（有数据时） → 五指标看坏道与大伪迹导联 → ICA 去伪迹 → 坏道球面样条插值。保持原通道数与采样率，源文件不变，按源文件存储格式另存修复后 Parquet。</p>
+    </div>
+
+    <!-- Controls Toolbar -->
+    <div class="control-toolbar">
+      <div class="path-button-group">
+        <button class="is-selected" data-path="all" onclick="selectPath('all')">全部节点视图</button>
+        <button data-path="main" onclick="selectPath('main')">脑电修复主干</button>
+        <button data-path="circuit" onclick="selectPath('circuit')">异常隔离路径</button>
+      </div>
+      <div class="nav-button-group">
+        <button onclick="stepPrev()">◀ 上一步</button>
+        <span id="step-counter" class="step-counter">1 / 14</span>
+        <button onclick="stepNext()">下一步 ▶</button>
+      </div>
+    </div>
+
+    <!-- Diagram Viewport Card -->
+    <div class="diagram-card">
+      <div class="svg-viewport-wrapper">
+        <svg id="dag-svg" viewBox="0 0 660 1030">
+          <defs>
+            <marker id="lumi-caret" viewBox="0 0 10 10" refX="7.5" refY="5"
+                    markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+              <path d="M 2.5 1.5 L 7.5 5 L 2.5 8.5" fill="none" stroke="var(--on-surface)"
+                    stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+            <marker id="lumi-caret-primary" viewBox="0 0 10 10" refX="7.5" refY="5"
+                    markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+              <path d="M 2.5 1.5 L 7.5 5 L 2.5 8.5" fill="none" stroke="var(--primary)"
+                    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+            <marker id="lumi-caret-error" viewBox="0 0 10 10" refX="7.5" refY="5"
+                    markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+              <path d="M 2.5 1.5 L 7.5 5 L 2.5 8.5" fill="none" stroke="var(--error)"
+                    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+
+          <g id="edges-layer"></g>
+          <g id="pills-layer"></g>
+          <g id="nodes-layer"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Node Role Legend -->
+    <div class="legend-bar">
+      <div class="legend-item">
+        <div class="legend-swatch" style="background: var(--surface-dim); border: 1.2px solid var(--outline);"></div>
+        <span>起止 / 标准处理节点</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background: var(--surface-bright); border: 1.2px solid var(--outline);"></div>
+        <span>I/O 数据接口 (A / O)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background: var(--surface-dim); border: 1.5px solid var(--outline); transform: rotate(45deg);"></div>
+        <span>条件判定门控 (B / C / Q)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background: var(--accent-container); border: 1.5px solid var(--primary);"></div>
+        <span>坏道球面插值 (I)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background: var(--error-container); border: 1.5px solid var(--error);"></div>
+        <span>隔离·熔断告警 (R)</span>
+      </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div id="detail-panel" class="detail-panel"></div>
+
+  </div>
+
+  <script>
+    // 主干：复合滤波 → 阻抗检测（有数据时） → 五指标 → ICA → 球面样条插值。
+    const NODES = [
+  {
+    "id": "S",
+    "label": "开始",
+    "type": "terminal",
+    "stage": "阶段 0 · 引擎入口",
+    "x": 240,
+    "y": 35,
+    "w": 130,
+    "h": 38,
+    "details": {
+      "desc": "<div class=\"desc-lead\">流水线触发入口，为单次 Episode 建立批处理上下文。</div><ul class=\"desc-list\"><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">创建上下文</span>：分配本次运行的临时目录与中间产物路径。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">分配会话 ID</span>：贯穿全流程的追踪标识，用于串联审计日志与隔离记录。</div></li></ul>",
+      "inputs": "触发信号 (Event Stream / Episode Path)",
+      "outputs": "Context { session_id, episode_dir }",
+      "thresholds": "无",
+      "formula": "PipelineContext(session_id = UUIDv4())"
+    }
+  },
+  {
+    "id": "A",
+    "label": "输入原始脑电 Parquet\n保留源表结构与元数据",
+    "type": "io",
+    "stage": "阶段 1 · 数据接入与安全校验",
+    "x": 240,
+    "y": 105,
+    "w": 270,
+    "h": 52,
+    "details": {
+      "desc": "<div class=\"desc-lead\">只读加载源 Parquet，在内存副本上处理脑电信号，源文件保持不变。</div><ul class=\"desc-list\"><li>保留源表 schema、列名及顺序、字段类型、嵌套结构和元数据。</li><li>记录时间戳、行顺序、通道名称及顺序、采样率和原始单位，供输出还原。</li><li>处理时统一信号单位；写出时恢复源文件单位与存储表示。</li></ul>",
+      "inputs": "源 Parquet、通道信息、采样率、montage",
+      "outputs": "X_raw [C, T], source_table, source_schema, metadata",
+      "thresholds": "源文件只读；输出路径必须不同于源路径",
+      "formula": "X_work = copy(X_raw)"
+    }
+  },
+  {
+    "id": "B",
+    "label": "输入校验通过?\nschema·采样率·时长·时间戳",
+    "type": "decision",
+    "stage": "阶段 1 · 数据接入与安全校验",
+    "x": 240,
+    "y": 190,
+    "w": 240,
+    "h": 64,
+    "details": {
+      "desc": "<div class=\"desc-lead\">验证源文件、显式配置和电极坐标，不合格则隔离。默认时长至少 10 秒；数值有限，时间戳严格递增，实测中位采样率相对配置偏差不超过 0.5%。</div><ul class=\"desc-list\"><li>通道名单及单位必须显式配置，至少 4 个头皮导联；所有头皮电极需有效且不同的三维坐标。</li><li>源文件只读，输出和审计路径须未被占用。</li><li>低通截止频率必须低于源采样率的 Nyquist 频率。</li></ul>",
+      "inputs": "X_raw [C, T], Metadata",
+      "outputs": "Bool (Pass / Reject)",
+      "thresholds": "默认时长 ≥10 s；至少 4 个头皮通道；有限信号与有效坐标",
+      "formula": "Pass = ValidConfig ∧ FiniteSignal ∧ MonotonicTime ∧ ValidMontage"
+    }
+  },
+  {
+    "id": "F",
+    "label": "复合滤波\n0.5Hz高通滤波、100Hz低通滤波、50/100 Hz 梳状陷波",
+    "type": "process",
+    "stage": "阶段 2 · 复合滤波",
+    "x": 240,
+    "y": 280,
+    "w": 290,
+    "h": 56,
+    "details": {
+      "desc": "<div class=\"desc-lead\">仅处理头皮导联：先减去各通道时间中位数，再做 0.5–100 Hz 带通及 50/100 Hz 陷波；辅助导联保持不变。</div><div class=\"desc-note\">ICA 拟合支路从同一去直流数据单独生成 1–100 Hz 副本，空间权重应用到最终 0.5–100 Hz 数据。两支路不串联高通，全流程保持原采样率。</div>",
+      "inputs": "X_raw [C, T]",
+      "outputs": "X_filt [C_scalp, T]；ICA 拟合副本由 P 独立生成",
+      "thresholds": "0.5 Hz 高通 · 100 Hz 低通 · 50/100 Hz 梳状陷波",
+      "formula": "X_filt = Notch50/100(Bandpass0.5–100(MedianCenter(X_scalp)))"
+    }
+  },
+  {
+    "id": "C",
+    "label": "是否有阻抗数据?\n有则额外检测，无则直接五指标",
+    "type": "decision",
+    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "x": 240,
+    "y": 370,
+    "w": 270,
+    "h": 64,
+    "details": {
+      "desc": "<div class=\"desc-lead\">只判断有没有硬件阻抗。有阻抗时多看一步阻抗；没有阻抗就直接用五个指标。两条路之后都用同一套五指标看坏道和大伪迹导联。</div><ul class=\"desc-list\"><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">检查路径</span>：<code>&lt;episode_dir&gt;/observation.eeg_impedance.parquet</code>，如 <code>/data/chunk-000/episode_000000/</code>。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">有阻抗 → 节点 D</span>：额外做阻抗检测，完成后再进入节点 M2 的五指标。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">无阻抗 → 节点 M</span>：不做阻抗、也不做幅值反推，把滤波后数据直接送去节点 M2。</div></li></ul><div class=\"desc-note\">阻抗只是有数据时的附加检查，不代替五个指标。32 通道数据通常没有阻抗文件，照样用五指标判坏道和大伪迹导联。</div>",
+      "inputs": "Episode Directory Path",
+      "outputs": "Bool (HasImpedance)",
+      "thresholds": "observation.eeg_impedance.parquet 是否存在",
+      "formula": "HasImp = FileExists(observation.eeg_impedance.parquet)"
+    }
+  },
+  {
+    "id": "D",
+    "label": "额外：阻抗检测\n≥ 150 kΩ 记入坏道",
+    "type": "process",
+    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "x": 115,
+    "y": 465,
+    "w": 215,
+    "h": 54,
+    "details": {
+      "desc": "<div class=\"desc-lead\">读取同目录 observation.eeg_impedance.parquet（或单文件命令行指定路径）。当前契约为各通道独立数值列，单位由 impedance_unit 明确指定。</div><div class=\"desc-note\">任一快照 ≥150 kΩ 记为阻抗坏道；有文件但字段缺失或值无效时隔离，不静默跳过。两份现有 EEG 样本均未附阻抗文件。</div>",
+      "inputs": "observation.eeg_impedance.parquet, X_filt",
+      "outputs": "B_imp [C], X_filt（送往 M2）",
+      "thresholds": "有阻抗文件时：实测 ≥ 150 kΩ 额外记坏",
+      "formula": "B_imp(c) = 𝕀(max_t Z(c,t) ≥ 150 kΩ)"
+    }
+  },
+  {
+    "id": "M",
+    "label": "无阻抗\n直接用五指标看坏道与大伪迹",
+    "type": "process",
+    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "x": 370,
+    "y": 465,
+    "w": 235,
+    "h": 54,
+    "details": {
+      "desc": "<div class=\"desc-lead\">没有阻抗文件时不另做先验。不读阻抗，也不再用 0.5–4 Hz 的 RMS 幅值反推坏道，滤波后的数据直接进入节点 M2。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">确认无阻抗</span>：本 Episode 没有 <code>observation.eeg_impedance.parquet</code>。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">跳过阻抗检测</span>：B_imp 为空，不产生额外坏道。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">交给五指标</span>：节点 M2 用 flat / contact / bridge / correlation / hfnoise 看坏道和大伪迹导联。</div></li></ul><div class=\"desc-note\">有阻抗与无阻抗的差别只在节点 D 多出来的那一步。五指标本身两条路相同。</div>",
+      "inputs": "X_filt [C, T]",
+      "outputs": "X_filt（送往 M2），B_imp = ∅",
+      "thresholds": "无幅值反推阈值",
+      "formula": "B_imp = ∅,  下一步 = M2(X_filt)"
+    }
+  },
+  {
+    "id": "M2",
+    "label": "五指标看坏道与大伪迹导联\nflat/contact/bridge/corr/hfnoise",
+    "type": "process",
+    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "x": 240,
+    "y": 555,
+    "w": 300,
+    "h": 58,
+    "details": {
+      "desc": "<div class=\"desc-lead\">有阻抗、无阻抗都必经本节点。先排除辅助导联（VEOG / HEOG / EKG / EMG / TRIGGER / IO），再对头皮导联用五个指标同时看坏道和大伪迹导联。有阻抗时，再把节点 D 的 B_imp 并进坏道。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">flat</span>（死道 / 平坦）：std &lt; 0.2 µV <em>且</em> 相邻采样差分 &lt; 0.02 µV 的占比 &gt; 0.7。计入坏道。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">contact</span>（接触差 / 相对高振幅）：对通道 std 做中位数 + MAD 稳健 z：<ul class=\"desc-sub\"><li>hard：z &gt; 3.5</li><li>soft：z &gt; 3.0 且 std &gt; 25 µV</li></ul>命中即记为大伪迹导联；未被前额豁免时同时计入坏道。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">bridge</span>（电极桥接）：按约 2 s 切 epoch，对通道对算电学距离 ED = var_i + var_j − 2·cov_ij；多数 epoch 的 ED &lt; 16 µV² 且不超过邻接中位的一半时，两端通道同时判坏。信号短于 10 s 跳过本规则。</div></li><li><span class=\"desc-step\">4</span><div><span class=\"desc-key\">correlation</span>（相关过低）：按 1 s 滑窗取该通道与其它通道的最大绝对相关，&lt; 0.4 的窗口占比 &gt; 20% 即命中。</div></li><li><span class=\"desc-step\">5</span><div><span class=\"desc-key\">hfnoise</span>（高频噪声）：以 50 Hz 为界计算高频相对低频的噪声指数，再做中位数 + MAD 稳健 z，z &gt; 5。计入坏道，同时记为大伪迹导联。</div></li></ul><div class=\"desc-note\"><span class=\"desc-key\">坏道与大伪迹导联</span>：<ul class=\"desc-sub\"><li>坏道 B_five = flat ∨ bridge ∨ hfnoise ∨ (contact ∧ ¬豁免) ∨ (correlation ∧ 同时命中其它规则)。correlation 单独命中只记预警。</li><li>大伪迹导联 A_art = contact ∨ hfnoise。前额 Fp1 / Fp2 / Fpz / AF3 / AF4 仅被 contact 命中时不进坏道，但仍记为大伪迹导联，交节点 P 的 ICA 处理。F7 / F8 不豁免。</li><li>有阻抗：B_total = B_five ∪ B_imp。无阻抗：B_total = B_five。</li></ul></div><div class=\"desc-note\">实现见 <code>eeg_repair.algorithms.mark_bad_channels</code>；五条规则的阈值是该模块常量，不随 YAML 变动。坏道率 = 坏道数 / 头皮导联数，&lt; 0.30 记 passed。联合阻抗坏道后，坏道率 &gt; max_bad_ratio（默认 0.40）或好道少于 4 个时隔离。</div>",
+      "inputs": "X_filt [C, T], B_imp [C]（无阻抗时为空）",
+      "outputs": "B_total [C] (坏道), A_art [C] (大伪迹导联), bad_rate",
+      "thresholds": "flat std<0.2µV · contact z>3.5 · bridge ED<16µV² · corr<0.4 占比>20% · hfnoise z>5",
+      "formula": "B_total = B_five ∪ B_imp,   A_art = contact ∨ hfnoise"
+    }
+  },
+  {
+    "id": "P",
+    "label": "ICA 去伪迹\n剔除肌电与眼电成分",
+    "type": "process",
+    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "x": 240,
+    "y": 645,
+    "w": 250,
+    "h": 56,
+    "details": {
+      "desc": "<div class=\"desc-lead\">用 Infomax ICA 剔除肌电与眼电成分。已判坏通道设为 bads，<span class=\"desc-key\">不参与拟合</span>，避免坏道污染解混矩阵。平均参考放到坏道插值之后。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">拟合 ICA</span>：方法 Infomax，在独立 1–100 Hz 副本上拟合，权重套回 0.5–100 Hz 数据；成分数默认 32 且不超过好道数；有效时长不足 5 s 则跳过本步。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">识别肌电 IC</span>：对每个成分做 Welch PSD，取 r = P(30–100 Hz) / P(1–30 Hz)，再对 r 做 MAD-z：<ul class=\"desc-sub\"><li>z &gt; 3.0 判为显著肌电成分</li><li>按源能量从高到低剔除，数量不超过好道数的 20%</li></ul></div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">识别眼电 IC</span>：仅用前额极 FP1 / FP2 / FPZ 作 proxy 跑 find_bads_eog（阈值 3.0），按相关强度最多保留 2 个。</div></li><li><span class=\"desc-step\">4</span><div><span class=\"desc-key\">写回</span>：剔除集合 = 肌电 IC ∪ 眼电 IC，从数据中减去这些成分；辅助导联原样保留。</div></li></ul><div class=\"desc-note\"><span class=\"desc-key\">肌电干扰预警</span>（仅记录，不改变门控通过与否）：<ul class=\"desc-sub\"><li>显著肌电 IC 占比 ∈ [80%, 90%) → 肌电干扰预警</li><li>占比 ≥ 90% → 肌电严重干扰预警</li></ul></div><div class=\"desc-note\"><span class=\"desc-key\">容错与规则次序</span>：ICA 失败或数据过短时跳过本步并记录原因，继续走球面插值与重参考。节点 M2 的 hfnoise 会先把强肌电通道判为坏道，这些通道交给节点 I 做球面插值；ICA 处理的是<span class=\"desc-key\">跨通道扩散的中低强度</span>伪迹。</div><div class=\"desc-note\">实现见 <code>eeg_repair.algorithms.fit_ica</code> / <code>apply_ica</code>，由 <code>ica_enabled</code> 与 <code>ica_components</code> 控制。</div>",
+      "inputs": "X_filt [C, T], B_total [C]",
+      "outputs": "X_clean [C, T] (已去伪迹), ICA 审计 (excluded / 预警)",
+      "thresholds": "肌电 MAD-z > 3.0 且 ≤ 好道数 20% · 眼电阈值 3.0 且 ≤ 2 个 · 拟合 ≥ 5 s",
+      "formula": "X_clean = ICA⁻¹( ICA(X_filt) \\ (IC_muscle ∪ IC_eog) )"
+    }
+  },
+  {
+    "id": "I",
+    "label": "坏道球面样条插值\n再做全头皮平均重参考",
+    "type": "process",
+    "stage": "阶段 4 · 坏道球面插值",
+    "x": 240,
+    "y": 730,
+    "w": 270,
+    "h": 56,
+    "details": {
+      "desc": "<div class=\"desc-lead\">坏通道统一由球面样条插值修复。每个采样点只使用同一时刻的好通道，按电极三维坐标估计坏道波形，保持原始通道数、通道顺序和采样率。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">坏道集合</span>：B_total；好道集合 G 为其余有效头皮导联。无坏道时跳过插值，仍执行后续平均重参考。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">球面样条</span>：用 montage 上的三维坐标，由好通道插值坏道。实现为 MNE <code>interpolate_bads</code>。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">平均重参考</span>：插值后的全体头皮导联做平均参考，插值结果进入参考。</div></li></ul><div class=\"desc-note\">仅填补原有坏通道，不新增虚拟电极或扩展目标通道。辅助导联不参与插值和头皮平均参考。前额仅因 contact 被豁免的通道不在 B_total 里，不做插值，由上一步 ICA 处理眼电，再统一重参考。</div>",
+      "inputs": "X_clean [C, T], B_total [C], montage",
+      "outputs": "X_ref [C, T]",
+      "thresholds": "坏道 = B_total；插值需有效三维电极坐标及可用好通道",
+      "formula": "X_filled[B_total, :] = SphericalSpline(X_clean[G, :], pos_G, pos_bad); X_filled[G, :] = X_clean[G, :]; X_ref = X_filled − mean_EEG(X_filled)"
+    }
+  },
+  {
+    "id": "Q",
+    "label": "输出一致性与修复质量检查\n波形有效 · 源表结构一致",
+    "type": "decision",
+    "stage": "阶段 5 · 质量检查",
+    "x": 240,
+    "y": 825,
+    "w": 245,
+    "h": 60,
+    "details": {
+      "desc": "<div class=\"desc-lead\">检查插值后的信号及待写出表，合格后另存修复结果。</div><ul class=\"desc-list\"><li>检查信号是否含 NaN / Inf，并记录坏道率、ICA 处理结果和球面插值结果。</li><li>确认通道数、顺序、采样率、采样点数与源数据一致。</li><li>确认时间戳、非脑电字段、行顺序、schema 与源表一致；单位已恢复。</li><li>插值失败或输出值溢出源浮点类型时，记录原因并隔离，保留原浮点存储精度及其舍入，不改写源格式。</li></ul>",
+      "inputs": "X_ref [C, T], source_table, source_schema, AuditLog",
+      "outputs": "Bool (Pass / Reject)",
+      "thresholds": "信号有效；结构一致；原始时间轴与非脑电数据保持不变",
+      "formula": "Pass = Finite(X_ref) ∧ SameShape ∧ SameSchema ∧ SameTimeAxis"
+    }
+  },
+  {
+    "id": "O",
+    "label": "另存修复后的 Parquet\n存储格式与源文件一致",
+    "type": "io",
+    "stage": "阶段 6 · 另存输出",
+    "x": 240,
+    "y": 915,
+    "w": 265,
+    "h": 52,
+    "details": {
+      "desc": "<div class=\"desc-lead\">参照源 Parquet 的存储格式，输出独立的修复文件，绝不覆盖源文件。</div><ul class=\"desc-list\"><li>在源表副本中仅替换脑电信号值；保留列名、列顺序、数据类型、嵌套结构、元数据及原始单位。</li><li>保持行数、行顺序、时间戳、通道顺序及所有非脑电字段不变；保持压缩 codec 和行组大小；不承诺页布局及编码逐字节相同。</li><li>例如源文件 observation.eeg.parquet，另存为 observation.eeg_repair.parquet；目标已存在时拒绝覆盖，改用新输出目录重试。</li><li>坏道名单、规则命中明细、ICA 成分及插值结果写入独立审计文件，不给源表结构增列。</li><li>写出后重新读取，核对 schema、行数与非脑电字段。</li></ul>",
+      "inputs": "X_ref, source_table, source_schema, metadata, AuditLog",
+      "outputs": "独立的修复后 Parquet + 独立审计文件",
+      "thresholds": "输出路径 ≠ 源路径；存储结构与源文件一致",
+      "formula": "WriteParquet(new_path, ReplaceEEG(copy(source_table), X_ref), schema=source_schema)"
+    }
+  },
+  {
+    "id": "R",
+    "label": "隔离·告警\n保留源文件",
+    "type": "error",
+    "stage": "全局异常处理 · 故障隔离",
+    "x": 575,
+    "y": 515,
+    "w": 125,
+    "h": 710,
+    "details": {
+      "desc": "<div class=\"desc-lead\">任一阶段校验或处理失败时，记录 quarantine.jsonl 并继续批次内其他文件。源文件保持不变。</div><div class=\"desc-note\">包括输入格式、缺失坐标、无效阻抗、坏道率超限、好道不足、插值失败、输出结构或回读验证失败；ICA 失败单独记录并继续插值。</div>",
+      "inputs": "失败阶段、文件路径与原因",
+      "outputs": "隔离记录 + 告警",
+      "thresholds": "任一校验失败",
+      "formula": "LogFailure(stage, reason); KeepSourceUnchanged"
+    }
+  },
+  {
+    "id": "E",
+    "label": "结束",
+    "type": "terminal",
+    "stage": "阶段 6 · 流程终止",
+    "x": 240,
+    "y": 995,
+    "w": 130,
+    "h": 38,
+    "details": {
+      "desc": "<div class=\"desc-lead\">清理临时副本，返回处理状态。源文件始终保留；成功时返回修复后 Parquet 路径。</div>",
+      "inputs": "处理状态、输出路径",
+      "outputs": "SUCCESS / QUARANTINED",
+      "thresholds": "无",
+      "formula": "Return(status, output_path)"
+    }
+  }
+];
+
+    const EDGES = [
+  {
+    "from": "S",
+    "to": "A",
+    "path": "all main"
+  },
+  {
+    "from": "A",
+    "to": "B",
+    "path": "all main"
+  },
+  {
+    "from": "B",
+    "to": "R",
+    "label": "否",
+    "path": "all circuit",
+    "type": "circuit"
+  },
+  {
+    "from": "B",
+    "to": "F",
+    "label": "是",
+    "path": "all main"
+  },
+  {
+    "from": "F",
+    "to": "C",
+    "path": "all main"
+  },
+  {
+    "from": "C",
+    "to": "D",
+    "label": "是",
+    "path": "all main"
+  },
+  {
+    "from": "C",
+    "to": "M",
+    "label": "否",
+    "path": "all main"
+  },
+  {
+    "from": "D",
+    "to": "M2",
+    "path": "all main"
+  },
+  {
+    "from": "M",
+    "to": "M2",
+    "path": "all main"
+  },
+  {
+    "from": "M2",
+    "to": "P",
+    "path": "all main"
+  },
+  {
+    "from": "P",
+    "to": "I",
+    "path": "all main"
+  },
+  {
+    "from": "I",
+    "to": "Q",
+    "path": "all main"
+  },
+  {
+    "from": "Q",
+    "to": "R",
+    "label": "否",
+    "path": "all circuit",
+    "type": "circuit"
+  },
+  {
+    "from": "Q",
+    "to": "O",
+    "label": "是",
+    "path": "all main"
+  },
+  {
+    "from": "R",
+    "to": "E",
+    "path": "all circuit",
+    "type": "circuit"
+  },
+  {
+    "from": "O",
+    "to": "E",
+    "path": "all main"
+  }
+];
+
+    const TOPO_ORDER = ["S","A","B","F","C","D","M","M2","P","I","Q","O","R","E"];
+
+    let activePathFilter = 'all';
+    let activeNodeId = 'A';
+    let stepIndex = TOPO_ORDER.indexOf('A');
+
+    function getNode(id) {
+      return NODES.find(n => n.id === id);
+    }
+
+    function createRoundedDiamondPath(cx, cy, w, h) {
+      const hw = w / 2, hh = h / 2;
+      const L = Math.sqrt(hw * hw + hh * hh);
+      const s = Math.min(14, 0.20 * L);
+      const dx = s * hw / L, dy = s * hh / L;
+      return `M ${cx - dx} ${cy - hh + dy} Q ${cx} ${cy - hh} ${cx + dx} ${cy - hh + dy} ` +
+             `L ${cx + hw - dx} ${cy - dy} Q ${cx + hw} ${cy} ${cx + hw - dx} ${cy + dy} ` +
+             `L ${cx + dx} ${cy + hh - dy} Q ${cx} ${cy + hh} ${cx - dx} ${cy + hh - dy} ` +
+             `L ${cx - hw + dx} ${cy + dy} Q ${cx - hw} ${cy} ${cx - hw + dx} ${cy - dy} Z`;
+    }
+
+    function createParallelogramPath(x, y, w, h) {
+      const skew = 14;
+      return `M ${x + skew} ${y} L ${x + w} ${y} L ${x + w - skew} ${y + h} L ${x} ${y + h} Z`;
+    }
+
+    function renderDiagram() {
+      const nodesLayer = document.getElementById('nodes-layer');
+      const edgesLayer = document.getElementById('edges-layer');
+      const pillsLayer = document.getElementById('pills-layer');
+
+      nodesLayer.innerHTML = '';
+      edgesLayer.innerHTML = '';
+      pillsLayer.innerHTML = '';
+
+      EDGES.forEach(edge => {
+        const source = getNode(edge.from);
+        const target = getNode(edge.to);
+        if (!source || !target) return;
+
+        const isPathMatched = activePathFilter === 'all' || edge.path.includes(activePathFilter);
+        let pathD = '';
+        let midX = 0, midY = 0;
+
+        if (edge.from === 'B' && edge.to === 'R') {
+          const x1 = source.x + source.w / 2;
+          const y1 = source.y;
+          const x2 = target.x - target.w / 2;
+          pathD = `M ${x1} ${y1} L ${x2} ${y1}`;
+          midX = (x1 + x2) / 2; midY = y1;
+        } else if (edge.from === 'Q' && edge.to === 'R') {
+          const x1 = source.x + source.w / 2;
+          const y1 = source.y;
+          const x2 = target.x - target.w / 2;
+          pathD = `M ${x1} ${y1} L ${x2} ${y1}`;
+          midX = (x1 + x2) / 2; midY = y1;
+        } else if (edge.from === 'R' && edge.to === 'E') {
+          const x1 = source.x;
+          const y1 = source.y + source.h / 2;
+          const x2 = target.x + target.w / 2;
+          const y2 = target.y;
+          pathD = `M ${x1} ${y1} L ${x1} ${y2 - 14} Q ${x1} ${y2} ${x1 - 14} ${y2} L ${x2} ${y2}`;
+          midX = x1; midY = (y1 + y2) / 2;
+        } else if (edge.from === 'C' && edge.to === 'D') {
+          const x1 = source.x; const y1 = source.y + source.h / 2;
+          const x2 = target.x; const y2 = target.y - target.h / 2;
+          const turnY = (y1 + y2) / 2;
+          pathD = `M ${x1} ${y1} L ${x1} ${turnY} L ${x2} ${turnY} L ${x2} ${y2}`;
+          midX = (x1 + x2) / 2; midY = turnY;
+        } else if (edge.from === 'C' && edge.to === 'M') {
+          const x1 = source.x; const y1 = source.y + source.h / 2;
+          const x2 = target.x; const y2 = target.y - target.h / 2;
+          const turnY = (y1 + y2) / 2;
+          pathD = `M ${x1} ${y1} L ${x1} ${turnY} L ${x2} ${turnY} L ${x2} ${y2}`;
+          midX = (x1 + x2) / 2; midY = turnY;
+        } else if (edge.from === 'D' && edge.to === 'M2') {
+          const x1 = source.x; const y1 = source.y + source.h / 2;
+          const x2 = target.x - 45; const y2 = target.y - target.h / 2;
+          const turnY = (y1 + y2) / 2;
+          pathD = `M ${x1} ${y1} L ${x1} ${turnY} L ${x2} ${turnY} L ${x2} ${y2}`;
+        } else if (edge.from === 'M' && edge.to === 'M2') {
+          const x1 = source.x; const y1 = source.y + source.h / 2;
+          const x2 = target.x + 45; const y2 = target.y - target.h / 2;
+          const turnY = (y1 + y2) / 2;
+          pathD = `M ${x1} ${y1} L ${x1} ${turnY} L ${x2} ${turnY} L ${x2} ${y2}`;
+        } else {
+          const x1 = source.x;
+          const y1 = source.y + source.h / 2;
+          const x2 = target.x;
+          const y2 = target.y - target.h / 2;
+          pathD = `M ${x1} ${y1} L ${x2} ${y2}`;
+          midX = x1; midY = (y1 + y2) / 2;
+        }
+
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', pathD);
+        pathEl.setAttribute('fill', 'none');
+        pathEl.setAttribute('class', `edge-path ${!isPathMatched ? 'is-dimmed' : ''} ${isPathMatched && activePathFilter !== 'all' ? 'is-animated' : ''}`);
+
+        let markerStyle = 'url(#lumi-caret)';
+        let strokeColor = 'var(--on-surface)';
+
+        if (edge.type === 'circuit') {
+          markerStyle = 'url(#lumi-caret-error)';
+          strokeColor = 'var(--error)';
+        } else if (isPathMatched && activePathFilter !== 'all') {
+          markerStyle = 'url(#lumi-caret-primary)';
+          strokeColor = 'var(--primary)';
+        }
+
+        pathEl.setAttribute('stroke', strokeColor);
+        pathEl.setAttribute('stroke-width', isPathMatched ? '1.5' : '1.0');
+        pathEl.setAttribute('marker-end', markerStyle);
+        edgesLayer.appendChild(pathEl);
+
+        if (edge.label) {
+          const pillGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          pillGroup.setAttribute('class', `edge-label-pill ${!isPathMatched ? 'is-dimmed' : ''}`);
+
+          const pillW = edge.label.length * 10 + 16;
+          const pillH = 18;
+
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', midX - pillW / 2);
+          rect.setAttribute('y', midY - pillH / 2);
+          rect.setAttribute('width', pillW);
+          rect.setAttribute('height', pillH);
+          rect.setAttribute('rx', '9');
+          rect.setAttribute('fill', 'var(--surface-bright)');
+          rect.setAttribute('stroke', edge.type === 'circuit' ? 'var(--error)' : 'var(--outline)');
+          rect.setAttribute('stroke-width', '1');
+
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', midX);
+          text.setAttribute('y', midY + 4);
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('font-family', 'var(--ff-mono)');
+          text.setAttribute('font-size', '11');
+          text.setAttribute('fill', edge.type === 'circuit' ? 'var(--error)' : 'var(--on-surface)');
+          text.textContent = edge.label;
+
+          pillGroup.appendChild(rect);
+          pillGroup.appendChild(text);
+          pillsLayer.appendChild(pillGroup);
+        }
+      });
+
+      NODES.forEach(node => {
+        const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const isMatched = isNodeInFilter(node.id, activePathFilter);
+        const isActive = (node.id === activeNodeId);
+
+        let classStr = 'node-group';
+        if (!isMatched) classStr += ' is-dimmed';
+        if (isActive) classStr += ' is-active';
+        if (node.type === 'error') classStr += ' is-error';
+
+        nodeGroup.setAttribute('class', classStr);
+        nodeGroup.setAttribute('onclick', `onNodeClick('${node.id}')`);
+
+        let shapeEl;
+        if (node.type === 'terminal') {
+          shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          shapeEl.setAttribute('x', node.x - node.w / 2);
+          shapeEl.setAttribute('y', node.y - node.h / 2);
+          shapeEl.setAttribute('width', node.w);
+          shapeEl.setAttribute('height', node.h);
+          shapeEl.setAttribute('rx', '999');
+          shapeEl.setAttribute('fill', 'var(--surface-dim)');
+          shapeEl.setAttribute('stroke', 'var(--outline)');
+          shapeEl.setAttribute('stroke-width', '1.4');
+        } else if (node.type === 'io') {
+          shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          shapeEl.setAttribute('d', createParallelogramPath(node.x - node.w / 2, node.y - node.h / 2, node.w, node.h));
+          shapeEl.setAttribute('fill', 'var(--surface-bright)');
+          shapeEl.setAttribute('stroke', 'var(--outline)');
+          shapeEl.setAttribute('stroke-width', '1.4');
+        } else if (node.type === 'decision') {
+          shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          shapeEl.setAttribute('d', createRoundedDiamondPath(node.x, node.y, node.w, node.h));
+          shapeEl.setAttribute('fill', 'var(--surface-dim)');
+          shapeEl.setAttribute('stroke', 'var(--outline)');
+          shapeEl.setAttribute('stroke-width', '1.5');
+        } else if (node.type === 'error') {
+          shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          shapeEl.setAttribute('x', node.x - node.w / 2);
+          shapeEl.setAttribute('y', node.y - node.h / 2);
+          shapeEl.setAttribute('width', node.w);
+          shapeEl.setAttribute('height', node.h);
+          shapeEl.setAttribute('rx', '12');
+          shapeEl.setAttribute('fill', 'var(--error-container)');
+          shapeEl.setAttribute('stroke', 'var(--error)');
+          shapeEl.setAttribute('stroke-width', '1.6');
+        } else {
+          shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          shapeEl.setAttribute('x', node.x - node.w / 2);
+          shapeEl.setAttribute('y', node.y - node.h / 2);
+          shapeEl.setAttribute('width', node.w);
+          shapeEl.setAttribute('height', node.h);
+          shapeEl.setAttribute('rx', '10');
+
+          if (node.id === 'I') {
+            shapeEl.setAttribute('fill', 'var(--accent-container)');
+            shapeEl.setAttribute('stroke', 'var(--primary)');
+            shapeEl.setAttribute('stroke-width', '2');
+          } else {
+            shapeEl.setAttribute('fill', 'var(--surface-dim)');
+            shapeEl.setAttribute('stroke', 'var(--stroke-default)');
+            shapeEl.setAttribute('stroke-width', '1.3');
+          }
+        }
+
+        shapeEl.setAttribute('class', 'node-shape');
+        nodeGroup.appendChild(shapeEl);
+
+        const idText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        idText.setAttribute('x', node.x);
+        idText.setAttribute('y', node.y - (node.label.includes('\n') ? 11 : 4));
+        idText.setAttribute('text-anchor', 'middle');
+        idText.setAttribute('font-family', 'var(--ff-mono)');
+        idText.setAttribute('font-size', '10');
+        idText.setAttribute('font-weight', '600');
+        idText.setAttribute('fill', node.type === 'error' ? 'var(--error)' : 'var(--primary)');
+        idText.textContent = `[${node.id}]`;
+        nodeGroup.appendChild(idText);
+
+        const lines = node.label.split('\n');
+        lines.forEach((line, lIdx) => {
+          const tSpan = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          tSpan.setAttribute('x', node.x);
+          const startY = node.y + (lines.length > 1 ? (lIdx * 13 + 3) : 9);
+          tSpan.setAttribute('y', startY);
+          tSpan.setAttribute('text-anchor', 'middle');
+          tSpan.setAttribute('font-family', 'var(--ff-sans)');
+          tSpan.setAttribute('font-size', lIdx === 0 ? '11.2' : '10.0');
+          tSpan.setAttribute('font-weight', lIdx === 0 ? '600' : '400');
+          tSpan.setAttribute('fill', node.type === 'error' ? 'var(--error)' : (lIdx === 0 ? 'var(--on-surface)' : 'var(--on-surface-variant)'));
+          tSpan.textContent = line;
+          nodeGroup.appendChild(tSpan);
+        });
+
+        nodesLayer.appendChild(nodeGroup);
+      });
+
+      renderDetailPanel();
+      updateStepReadout();
+    }
+
+    function isNodeInFilter(nodeId, filter) {
+      if (filter === 'all') return true;
+      return EDGES.some(e => e.path.includes(filter) && (e.from === nodeId || e.to === nodeId));
+    }
+
+    function renderDetailPanel() {
+      const node = getNode(activeNodeId);
+      const panel = document.getElementById('detail-panel');
+      if (!node || !panel) return;
+
+      const isError = node.type === 'error';
+      panel.style.borderColor = isError ? 'var(--error)' : 'var(--primary)';
+
+      panel.innerHTML = `
+        <div class="detail-header">
+          <div class="detail-title-group">
+            <span class="detail-id-tag" style="${isError ? 'color:var(--error); border-color:var(--error); background:var(--error-container);' : ''}">节点 ${node.id}</span>
+            <span class="detail-name">${node.label.replace('\n', ' · ')}</span>
+          </div>
+          <span class="detail-stage-pill">${node.stage}</span>
+        </div>
+
+        <div class="detail-block">
+          <span class="detail-block-title">技术说明与处理逻辑</span>
+          <div class="detail-block-content">${node.details.desc}</div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-block">
+            <span class="detail-block-title">输入张量 / 信号</span>
+            <div class="detail-block-content"><code>${node.details.inputs}</code></div>
+          </div>
+          <div class="detail-block">
+            <span class="detail-block-title">输出张量 / 信号</span>
+            <div class="detail-block-content"><code>${node.details.outputs}</code></div>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-block">
+            <span class="detail-block-title">判定门控阈值 / 参数</span>
+            <div class="detail-block-content">${node.details.thresholds}</div>
+          </div>
+          <div class="detail-block">
+            <span class="detail-block-title">核心算式 / 判据表达</span>
+            <div class="detail-formula">${node.details.formula}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectPath(pathKey) {
+      activePathFilter = pathKey;
+      document.querySelectorAll('.path-button-group button').forEach(btn => {
+        btn.classList.toggle('is-selected', btn.dataset.path === pathKey);
+      });
+
+      if (pathKey === 'main') activeNodeId = 'F';
+      else if (pathKey === 'circuit') activeNodeId = 'R';
+      stepIndex = TOPO_ORDER.indexOf(activeNodeId);
+
+      renderDiagram();
+    }
+
+    function onNodeClick(id) {
+      activeNodeId = id;
+      stepIndex = TOPO_ORDER.indexOf(id);
+      renderDiagram();
+    }
+
+    function stepNext() {
+      if (stepIndex < TOPO_ORDER.length - 1) {
+        stepIndex++;
+        activeNodeId = TOPO_ORDER[stepIndex];
+        renderDiagram();
+      }
+    }
+
+    function stepPrev() {
+      if (stepIndex > 0) {
+        stepIndex--;
+        activeNodeId = TOPO_ORDER[stepIndex];
+        renderDiagram();
+      }
+    }
+
+    function updateStepReadout() {
+      const counter = document.getElementById('step-counter');
+      if (counter) {
+        counter.textContent = `${stepIndex + 1} / ${TOPO_ORDER.length}`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDiagram();
+    });
+  </script>
+</body>
+</html>

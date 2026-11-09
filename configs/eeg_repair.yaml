@@ -1,0 +1,17 @@
+# 示例配置：运行前必须核对真实列名、通道顺序、采样率、单位。
+channels: [Fp1, Fp2, F3, F4, C3, C4, P3, P4, O1, O2, F7, F8, T7, T8, P7, P8, Fz, Cz, Pz]
+sfreq: 250.0
+unit: uV
+layout: columns            # columns：每通道一列；vector：每行一个通道向量
+signal_column: eeg        # 仅 vector 使用；向量顺序必须与 channels 一致
+highpass_hz: 0.5
+lowpass_hz: 100.0
+notch_hz: [50.0, 100.0]
+montage: standard_1020
+montage_csv: null         # 实测坐标 CSV：name,x_m_mne,y_m_mne,z_m_mne（米）
+ica_enabled: true
+ica_components: 32
+min_duration_s: 10.0
+max_bad_ratio: 0.4
+impedance_threshold_kohm: 150.0
+impedance_unit: ohm       # 阻抗文件为各通道独立数值列；取任一快照达到阈值
