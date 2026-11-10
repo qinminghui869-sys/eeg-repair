@@ -673,7 +673,7 @@ button.is-selected {
     "w": 240,
     "h": 64,
     "details": {
-      "desc": "<div class=\"desc-lead\">验证源文件、显式配置和电极坐标，不合格则隔离。默认时长至少 10 秒；数值有限，时间戳严格递增，实测中位采样率相对配置偏差不超过 0.5%。</div><ul class=\"desc-list\"><li>通道名单及单位必须显式配置，至少 4 个头皮导联；所有头皮电极需有效且不同的三维坐标。</li><li>源文件只读，输出和审计路径须未被占用。</li><li>低通截止频率必须低于源采样率的 Nyquist 频率。</li></ul>",
+      "desc": "<div class=\"desc-lead\">验证源文件、显式配置和电极坐标，不合格则隔离。默认时长至少 10 秒；数值有限，时间戳严格递增，实测中位采样率相对配置偏差不超过 0.5%。</div><ul class=\"desc-list\"><li>通道名单及单位必须显式配置，至少 4 个头皮导联。已有坐标必须有效且互不相同；缺少坐标不终止处理，这些通道不做球面插值。</li><li>源文件只读，输出和审计路径须未被占用。</li><li>低通截止频率必须低于源采样率的 Nyquist 频率。</li></ul>",
       "inputs": "X_raw [C, T], Metadata",
       "outputs": "Bool (Pass / Reject)",
       "thresholds": "默认时长 ≥10 s；至少 4 个头皮通道；有限信号与有效坐标",
@@ -682,7 +682,7 @@ button.is-selected {
   },
   {
     "id": "F",
-    "label": "复合滤波\n0.5Hz高通滤波、100Hz低通滤波、50/100 Hz 梳状陷波",
+    "label": "复合滤波\n0.5Hz高通滤波、100Hz低通滤波、50 Hz 陷波",
     "type": "process",
     "stage": "阶段 2 · 复合滤波",
     "x": 240,
@@ -690,11 +690,11 @@ button.is-selected {
     "w": 290,
     "h": 56,
     "details": {
-      "desc": "<div class=\"desc-lead\">仅处理头皮导联：先减去各通道时间中位数，再做 0.5–100 Hz 带通及 50/100 Hz 陷波；辅助导联保持不变。</div><div class=\"desc-note\">ICA 拟合支路从同一去直流数据单独生成 1–100 Hz 副本，空间权重应用到最终 0.5–100 Hz 数据。两支路不串联高通，全流程保持原采样率。</div>",
+      "desc": "<div class=\"desc-lead\">仅处理头皮导联：先减去各通道时间中位数，再做 0.5–100 Hz 带通及 50 Hz 陷波；辅助导联保持不变。</div><div class=\"desc-note\">ICA 拟合支路从同一去直流数据单独生成 1–100 Hz 副本，空间权重应用到最终 0.5–100 Hz 数据。两支路不串联高通，全流程保持原采样率。</div>",
       "inputs": "X_raw [C, T]",
       "outputs": "X_filt [C_scalp, T]；ICA 拟合副本由 P 独立生成",
-      "thresholds": "0.5 Hz 高通 · 100 Hz 低通 · 50/100 Hz 梳状陷波",
-      "formula": "X_filt = Notch50/100(Bandpass0.5–100(MedianCenter(X_scalp)))"
+      "thresholds": "0.5 Hz 高通 · 100 Hz 低通 · 50 Hz 陷波",
+      "formula": "X_filt = Notch50(Bandpass0.5–100(MedianCenter(X_scalp)))"
     }
   },
   {
@@ -843,7 +843,7 @@ button.is-selected {
     "w": 125,
     "h": 710,
     "details": {
-      "desc": "<div class=\"desc-lead\">任一阶段校验或处理失败时，记录 quarantine.jsonl 并继续批次内其他文件。源文件保持不变。</div><div class=\"desc-note\">包括输入格式、缺失坐标、无效阻抗、坏道率超限、好道不足、插值失败、输出结构或回读验证失败；ICA 失败单独记录并继续插值。</div>",
+      "desc": "<div class=\"desc-lead\">任一阶段校验或处理失败时，记录 quarantine.jsonl 并继续批次内其他文件。源文件保持不变。</div><div class=\"desc-note\">包括输入格式、无效阻抗、坏道率超限、好道不足、插值失败、输出结构或回读验证失败；缺少坐标和 ICA 失败单独记录并继续。</div>",
       "inputs": "失败阶段、文件路径与原因",
       "outputs": "隔离记录 + 告警",
       "thresholds": "任一校验失败",

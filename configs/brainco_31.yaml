@@ -1,4 +1,4 @@
-# 通道与采样率来自设备元数据模板；单位未声明，确认后填写 uV / mV / V。
+# BrainCo：31 个头皮通道加 IO、TRIG。单位未声明，确认后填写 uV、mV 或 V。
 channels:
 - FP1
 - FP2

@@ -1,5 +1,5 @@
-# Provisional montage for trial runs when measured coordinates are unavailable.
-# Confirm unit per batch before use. Channel order and sampling rate come from metadata.
+# 缺少实测坐标时的试运行配置。通道顺序和采样率来自元数据，单位须按批次确认。
+# 坐标见 montages/provisional_full.csv，不是 128 导帽实测。
 unit: uV
 layout: columns
 montage: colin27_1005

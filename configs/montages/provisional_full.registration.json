@@ -1,4 +1,5 @@
 {
+  "description": "\u8bd5\u8fd0\u884c\u5750\u6807\u7684\u751f\u6210\u8bb0\u5f55\u3002\u8fd0\u884c\u65f6\u6821\u9a8c csv_sha256\uff0c\u4e0d\u628a\u672c\u6587\u4ef6\u5f53\u4f5c\u7535\u6781\u5750\u6807\u3002",
   "status": "provisional_unvalidated_128",
   "coord_frame": "head",
   "unit": "m",
@@ -6,8 +7,8 @@
   "mne_version": "1.13.2",
   "source_url": "https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html",
   "alias_source_url": "https://www.compumedicsneuroscan.com/Uploads/Curry7012ReleaseNotes.pdf#page=13",
-  "source_sha256": "41ff1fef940c8e9762f7816a92652980101d1ddcd24173136104f52677160c2f",
-  "csv_sha256": "b27f4602c56f06553eb152543a79814eee6be3d048c9779b57f2bfdb70d1ab3c",
+  "source_sha256": "f0ff53be33655a878096ef53f1cb292f432a29ca7623c403ffbaabc1f11a7e73",
+  "csv_sha256": "86c7d5b58bdbefaddac6e5714ba8bc123932be4d7e3e125def3f4439c5afe3d8",
   "common_channels": [
     "C3",
     "C4",
@@ -130,27 +131,30 @@
     "Cb2": "I2",
     "Cbz": "Iz"
   },
-  "overlay_head_m": {
+  "published_pan_m": {
     "F11": [
-      -0.07443915840870173,
-      0.05991013319571957,
-      -0.038366504367320226
+      -0.074,
+      0.046770000000000006,
+      -0.03062
     ],
     "F12": [
-      0.07084730517087173,
-      0.056800601372181785,
-      -0.03255023024025733
+      0.074,
+      0.04449,
+      -0.02431
     ],
     "FT11": [
-      -0.08047257263881955,
-      0.03256057776106285,
-      -0.04793956383866446
+      -0.08,
+      0.01856,
+      -0.039409999999999994
     ],
     "FT12": [
-      0.0756144326889298,
-      0.029476338688162053,
-      -0.041170321723766834
-    ],
+      0.079,
+      0.016390000000000002,
+      -0.03211
+    ]
+  },
+  "published_pan_source": "CURRY default PAN xyz from https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html, millimeters converted to meters, not similarity-transformed.",
+  "overlay_head_m": {
     "Cb1": [
       -0.031993777780859524,
       -0.08483939166944272,
@@ -168,5 +172,5 @@
     ]
   },
   "channels": 130,
-  "limitation": "Template registration only; no measured 128-cap validation. Residuals are not errors at the four extrapolated sites."
+  "limitation": "F11/F12/FT11/FT12 keep the published PAN coordinates in meters. Cb1/Cb2/Cbz are template aliases. Neither set is a measured 128-cap position. Registration residuals do not describe these seven sites."
 }

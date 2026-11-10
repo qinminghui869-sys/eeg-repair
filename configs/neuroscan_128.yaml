@@ -1,5 +1,5 @@
-# 通道与采样率来自设备元数据模板；单位未声明，确认后填写 uV / mV / V。
-# 128 通道需要包含全部通道的实测 montage_csv，禁止猜测缺失电极坐标。
+# Neuroscan：128 个头皮通道加 VEOG、HEOG、EKG、EMG。单位未声明，确认后填写。
+# 标准模板缺少 F11、F12、FT11、FT12、Cb1、Cb2、Cbz。试运行使用 provisional.yaml。
 channels:
 - Fp1
 - Fpz

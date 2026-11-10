@@ -33,9 +33,10 @@ def apply(points, fit):
 def build():
     source_path = ASSETS / "neuroscan_net32_pan_mm.csv"
     with source_path.open() as stream:
+        rows = (line for line in stream if line.strip() and not line.lstrip().startswith("#"))
         source = {
             r["name"]: np.array([float(r[k]) for k in ("x_mm", "y_mm", "z_mm")]) / 1000
-            for r in csv.DictReader(stream)
+            for r in csv.DictReader(rows)
         }
     # colin27_1005 is the renamed standard_1005 in the locked MNE version.
     base = mne.channels.make_standard_montage("colin27_1005")
@@ -53,7 +54,9 @@ def build():
         loo.append(
             float(np.linalg.norm(apply(x[i : i + 1], fit_similarity(x[keep], y[keep]))[0] - y[i]) * 1000)
         )
-    overlay = {n: apply(source[n][None], fit)[0] for n in ("F11", "F12", "FT11", "FT12")}
+    # Published CURRY PAN xyz (mm), converted to meters. Not passed through the similarity transform.
+    published = ("F11", "F12", "FT11", "FT12")
+    overlay = {n: source[n].copy() for n in published}
     aliases = {"Cb1": "I1", "Cb2": "I2", "Cbz": "Iz"}
     overlay.update({n: positions[target].copy() for n, target in aliases.items()})
     positions.update(overlay)
@@ -74,6 +77,9 @@ def build():
             raise ValueError("Left/right orientation invalid")
     output = ASSETS / "provisional_full.csv"
     with output.open("w", newline="") as stream:
+        stream.write(
+            "# 试运行坐标，单位米。F11/F12/FT11/FT12 为 PAN 换算值，不在 head 坐标系；其余为 MNE head。\n"
+        )
         writer = csv.writer(stream)
         writer.writerow(["name", "x_m_mne", "y_m_mne", "z_m_mne"])
         writer.writerows([n, *[f"{v:.12f}" for v in lookup[n.upper()]]] for n in names)
@@ -81,6 +87,7 @@ def build():
     matrix[:3, :3] = fit[0] * fit[1]
     matrix[:3, 3] = fit[2]
     report = {
+        "description": "试运行坐标的生成记录。运行时校验 csv_sha256，不把本文件当作电极坐标。",
         "status": "provisional_unvalidated_128",
         "coord_frame": "head",
         "unit": "m",
@@ -99,9 +106,11 @@ def build():
         "leave_one_out_mm": dict(zip(common, loo)),
         "leave_one_out_rmse_mm": float(np.sqrt(np.mean(np.array(loo) ** 2))),
         "aliases": aliases,
-        "overlay_head_m": {n: p.tolist() for n, p in overlay.items()},
+        "published_pan_m": {n: overlay[n].tolist() for n in published},
+        "published_pan_source": "CURRY default PAN xyz from https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html, millimeters converted to meters, not similarity-transformed.",
+        "overlay_head_m": {n: overlay[n].tolist() for n in aliases},
         "channels": len(names),
-        "limitation": "Template registration only; no measured 128-cap validation. Residuals are not errors at the four extrapolated sites.",
+        "limitation": "F11/F12/FT11/FT12 keep the published PAN coordinates in meters. Cb1/Cb2/Cbz are template aliases. Neither set is a measured 128-cap position. Registration residuals do not describe these seven sites.",
     }
     (ASSETS / "provisional_full.registration.json").write_text(json.dumps(report, indent=2) + "\n")
     print(

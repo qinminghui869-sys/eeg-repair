@@ -22,3 +22,6 @@
 - 暂定坐标资产与试运行配置改为通用命名（`configs/provisional.yaml`）。
 - 数据集模式把 `observation.eeg_repair.parquet` 写回原数据目录，并在该数据集的 `meta/info.json` 登记对应特征。原始 `observation.eeg.parquet` 不覆盖。
 - 增加通用脚本 `scripts/repair.sh`，依次执行预检、修复和结构质检。
+- 默认陷波改为只做 50 Hz，与参考预处理一致。
+- 缺少电极坐标时不再终止处理：不猜测位置，这些通道不参与球面插值。
+- `F11/F12/FT11/FT12` 改为使用 CURRY 公布的 PAN 坐标（毫米换算为米），不再使用相似变换结果。

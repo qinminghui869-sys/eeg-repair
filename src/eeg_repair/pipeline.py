@@ -31,6 +31,7 @@ def montage_evidence(cfg: Config) -> dict:
 
 
 def prepare_montage(names: list[str], cfg: Config):
+    """Attach available coordinates. Missing names do not stop processing."""
     montage_evidence(cfg)
     montage = (
         alg.load_montage(cfg.montage_csv)
@@ -38,16 +39,21 @@ def prepare_montage(names: list[str], cfg: Config):
         else mne.channels.make_standard_montage(cfg.montage)
     )
     positions = alg._montage_pos(montage)
-    missing = [
+    present = [
+        name for name in names if name.upper() in positions and np.isfinite(positions[name.upper()]).all()
+    ]
+    if len({tuple(positions[name.upper()]) for name in present}) != len(present):
+        raise ValueError("electrode positions must be distinct")
+    return montage
+
+
+def missing_coordinates(names: list[str], montage) -> list[str]:
+    positions = alg._montage_pos(montage)
+    return [
         name
         for name in names
         if name.upper() not in positions or not np.isfinite(positions[name.upper()]).all()
     ]
-    if missing:
-        raise ValueError(f"missing electrode coordinates: {', '.join(missing)}; supply montage_csv")
-    if len({tuple(positions[n.upper()]) for n in names}) != len(names):
-        raise ValueError("electrode positions must be distinct")
-    return montage
 
 
 def impedance_bads(path: Path | None, names: list[str], cfg: Config) -> list[str]:
@@ -88,6 +94,7 @@ def repair_file(
         raise ValueError("require at least four scalp electrodes")
     evidence = montage_evidence(cfg)
     montage = prepare_montage(names, cfg)
+    evidence = {**evidence, "missing_coordinates": missing_coordinates(names, montage)}
     if impedance is None:
         candidate = record.path.with_name("observation.eeg_impedance.parquet")
         impedance = candidate if candidate.exists() else None

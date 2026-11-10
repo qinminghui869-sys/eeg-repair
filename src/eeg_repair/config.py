@@ -17,7 +17,7 @@ class Config:
     signal_column: str = "eeg"
     highpass_hz: float = 0.5
     lowpass_hz: float = 100.0
-    notch_hz: tuple[float, ...] = (50.0, 100.0)
+    notch_hz: tuple[float, ...] = (50.0,)
     montage: str = "standard_1020"
     montage_csv: str | None = None
     montage_report: str | None = None

@@ -50,9 +50,10 @@ def load_montage(csv_path: Path | str | None = None) -> mne.channels.DigMontage:
     import csv
 
     with Path(csv_path).open(newline="", encoding="utf-8") as stream:
+        rows = (line for line in stream if line.strip() and not line.lstrip().startswith("#"))
         pos = {
             r["name"]: np.array([float(r[k]) for k in ("x_m_mne", "y_m_mne", "z_m_mne")])
-            for r in csv.DictReader(stream)
+            for r in csv.DictReader(rows)
         }
     return mne.channels.make_dig_montage(ch_pos=pos, coord_frame="head")
 
@@ -73,7 +74,7 @@ def _raw(data_uv, names, sfreq, montage=None, bads=None) -> mne.io.RawArray:
     )
     if montage is not None:
         try:
-            raw.set_montage(montage, match_case=False, on_missing="raise")
+            raw.set_montage(montage, match_case=False, on_missing="ignore")
         except TypeError:
             raw.set_montage(montage)
     if bads:
@@ -381,13 +382,24 @@ def interpolate_bads(
     bad_channels: list[str],
     montage: mne.channels.DigMontage,
 ) -> np.ndarray:
-    """球面样条重建坏道。"""
+    """球面样条重建有坐标的坏道。无坐标通道保持原值。"""
     bads = [n for n in bad_channels if n in ch_names]
+    data = np.asarray(data_uv, np.float32)
     if not bads:
-        return np.asarray(data_uv, np.float32)
-    raw = _raw(data_uv, ch_names, sfreq, montage, bads)
+        return data
+    positions = _montage_pos(montage)
+    located = [
+        name for name in ch_names if name.upper() in positions and np.isfinite(positions[name.upper()]).all()
+    ]
+    located_bads = [name for name in bads if name in located]
+    if not located_bads or len(located) - len(located_bads) < 1:
+        return data
+    index = [ch_names.index(name) for name in located]
+    raw = _raw(data[index], located, sfreq, montage, located_bads)
     raw.interpolate_bads(reset_bads=True, verbose=False)
-    return (raw.get_data(picks="eeg") * 1e6).astype(np.float32)
+    repaired = data.copy()
+    repaired[index] = (raw.get_data(picks="eeg") * 1e6).astype(np.float32)
+    return repaired
 
 
 def average_reference(

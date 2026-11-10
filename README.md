@@ -86,17 +86,17 @@ eeg-repair-qc <dataset-dir>
 
 ## 配置
 
-单位取 `uV`、`mV` 或 `V`，须来自元数据或配置，程序不根据幅度猜测。配置与元数据冲突时终止。头皮通道均须有电极坐标。实测坐标 CSV 字段为 `name,x_m_mne,y_m_mne,z_m_mne`，单位米，坐标系为 MNE head，路径相对于配置文件所在目录。
+单位取 `uV`、`mV` 或 `V`，须来自元数据或配置，程序不根据幅度猜测。配置与元数据冲突时终止。缺少电极坐标时不终止处理，也不补猜位置；这些通道不参与球面插值。实测坐标 CSV 字段为 `name,x_m_mne,y_m_mne,z_m_mne`，单位米，路径相对于配置文件所在目录。
 
 | 文件 | 用途 |
 | --- | --- |
 | `configs/brainco_31.yaml` | 31 通道顺序与采样率。`unit` 为空时不能直接运行。 |
-| `configs/neuroscan_128.yaml` | 128 通道顺序与采样率。`unit` 为空时不能直接运行；标准 montage 未覆盖的电极须提供完整坐标 CSV。 |
+| `configs/neuroscan_128.yaml` | 128 通道顺序与采样率。`unit` 为空时不能直接运行。标准模板缺少 `F11/F12/FT11/FT12/Cb1/Cb2/Cbz`。 |
 | `configs/eeg_8.template.yaml` | 8 通道接入模板。须填写通道、采样率、单位和坐标。 |
 | `configs/eeg_repair.yaml` | 250 Hz、µV 的参数示例，不代表特定设备的单位。 |
 | `configs/provisional.yaml` | 缺少完整实测坐标时的显式试运行配置。单位仍须按批次确认。 |
 
-`configs/provisional.yaml` 使用仓库内暂定坐标。它不是个体实测，也不等同于厂家完整 128 导帽验证。生成方式与来源见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。正式配置不会为缺失电极补位。
+`configs/provisional.yaml` 使用仓库内暂定坐标。`F11/F12/FT11/FT12` 采用 [CURRY 公布的 PAN 坐标](https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html)，由毫米换算为米；`Cb1/Cb2/Cbz` 对应模板的 `I1/I2/Iz`。这些都不是个体实测，也不等同于厂家完整 128 导帽验证。生成方式见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
 
 ## 目录
 

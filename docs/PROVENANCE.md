@@ -17,6 +17,7 @@
 
 - 原始资产：`configs/montages/neuroscan_net32_pan_mm.csv`，抄录 Neuroscan CURRY Helpdesk 公开的 32 导 PAN 坐标（mm）：https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html 。
 - `Cb1/Cb2/Cbz` 按 CURRY 官方标签匹配规则对应 `I1/I2/Iz`：https://www.compumedicsneuroscan.com/Uploads/Curry7012ReleaseNotes.pdf 第 13 页。
-- 生成脚本：`scripts/build_provisional_montage.py`。基础模板为 MNE `colin27_1005`（原名 `standard_1005`），用模板基准点转换至 head 坐标后，与共同电极作无反射相似配准（排除 M1/M2）；额外位置使用该变换。
-- 输出：`configs/montages/provisional_full.csv` 及同名 `.registration.json`，记录源哈希、生成物哈希、MNE 版本、变换矩阵、逐点残差和留出误差。完整 CSV 导出正式设备配置中头皮通道的并集。
+- 生成脚本：`scripts/build_provisional_montage.py`。基础模板为 MNE `colin27_1005`（原名 `standard_1005`），用模板基准点转换至 head 坐标后，与共同电极作无反射相似配准（排除 M1/M2）。该变换只用于把模板与 PAN 源对齐并记录残差，不写回 `F11/F12/FT11/FT12`。
+- `F11/F12/FT11/FT12` 直接采用上述邮件中的 PAN xyz，由毫米换算为米，不经过相似变换。因此这 4 个点与其余已转入 MNE head 的电极不在同一套变换中。
+- 输出：`configs/montages/provisional_full.csv` 及同名 `.registration.json`，记录源哈希、生成物哈希、MNE 版本、变换矩阵、共同电极残差，以及这 4 个通道的公布坐标。完整 CSV 导出正式设备配置中头皮通道的并集。
 - 试运行配置 `configs/provisional.yaml` 显式选择该资产；正式配置仍保持原限制。审计保存配准报告并验证 CSV 哈希。来源明确、程序运行成功和坐标科学验证是不同层次的证据。

@@ -6,7 +6,7 @@ import pytest
 
 from eeg_repair import algorithms as alg
 from eeg_repair.config import Config
-from eeg_repair.pipeline import repair_file, impedance_bads, prepare_montage
+from eeg_repair.pipeline import repair_file, impedance_bads, missing_coordinates, prepare_montage
 
 NAMES = ("Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3", "P4")
 
@@ -74,10 +74,18 @@ def test_impedance_threshold_and_units(tmp_path):
         impedance_bads(path, ["C3"], cfg)
 
 
-def test_missing_coordinates_fail_explicitly():
-    cfg = Config(channels=("Cbz",), sfreq=250, unit="uV", montage="standard_1005")
-    with pytest.raises(ValueError, match="Cbz"):
-        prepare_montage(["Cbz"], cfg)
+def test_missing_coordinates_do_not_stop_processing():
+    cfg = Config(channels=("Cz", "Cbz"), sfreq=250, unit="uV", montage="standard_1005")
+    montage = prepare_montage(["Cz", "Cbz"], cfg)
+    assert missing_coordinates(["Cz", "Cbz"], montage) == ["Cbz"]
+    names = ["Fp1", "Fp2", "C3", "C4", "P3", "P4", "O1", "O2", "Cbz"]
+    rng = np.random.default_rng(3)
+    data = rng.normal(size=(len(names), 1000)).astype(np.float32)
+    data[-1] = 40.0
+    original = data[-1].copy()
+    repaired = alg.interpolate_bads(data, names, 250, ["Fp1", "Cbz"], montage)
+    assert np.array_equal(repaired[-1], original)
+    assert not np.array_equal(repaired[0], data[0])
 
 
 def test_dry_run_writes_nothing(tmp_path):
