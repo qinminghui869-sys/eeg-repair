@@ -37,7 +37,7 @@ def test_roundtrip_preserves_source_schema_aux_and_time(tmp_path, layout, unit):
     repaired = record.data_uv[:4] + 13
     table = replace_signals(record, repaired, cfg, [0, 1, 2, 3])
     output = tmp_path / "repair.parquet"
-    publish(record, table, output, {"status": "SUCCESS"})
+    publish(record, table, output)
     got = pq.read_table(output)
     assert source.schema.equals(got.schema, check_metadata=True)
     for name in ["timestamp", "episode_index", "label"]:
@@ -52,11 +52,11 @@ def test_roundtrip_preserves_source_schema_aux_and_time(tmp_path, layout, unit):
     meta = pq.ParquetFile(output).metadata
     assert [meta.row_group(i).num_rows for i in range(meta.num_row_groups)] == [37, 37, 26]
     assert meta.row_group(0).column(0).compression == "ZSTD"
-    assert output.with_suffix(".audit.json").exists()
+    assert not output.with_suffix(".audit.json").exists()
     with pytest.raises(FileExistsError):
-        publish(record, table, output, {})
+        publish(record, table, output)
     with pytest.raises(ValueError, match="overwritten"):
-        publish(record, table, path, {})
+        publish(record, table, path)
 
 
 def test_source_modified_during_run_rejected(tmp_path):
@@ -64,7 +64,7 @@ def test_source_modified_during_run_rejected(tmp_path):
     record = read_recording(path, cfg)
     pq.write_table(source, path, compression="snappy")
     with pytest.raises(ValueError, match="source changed"):
-        publish(record, source, tmp_path / "result.parquet", {})
+        publish(record, source, tmp_path / "result.parquet")
     assert not (tmp_path / "result.parquet").exists()
     assert not (tmp_path / "result.audit.json").exists()
 

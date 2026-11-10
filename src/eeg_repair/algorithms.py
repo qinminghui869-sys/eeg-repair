@@ -310,7 +310,7 @@ def _eog_ics(ica, raw) -> list[int]:
     if not proxy:
         return []
     try:
-        idx, scores = ica.find_bads_eog(raw, ch_name=proxy, threshold=3.0)
+        idx, scores = ica.find_bads_eog(raw, ch_name=proxy, threshold=3.0, verbose="error")
     except Exception:
         return []
     detected = [int(i) for i in (idx or [])]
@@ -345,7 +345,7 @@ def fit_ica(
     n_comp = max(1, min(n_components, n_good, fit.shape[0], fit.shape[1] - 1))
     raw_fit = _raw(fit, ch_names, sfreq, montage, bads)
     ica = mne.preprocessing.ICA(n_components=n_comp, method="infomax", random_state=97, max_iter=500)
-    ica.fit(raw_fit)
+    ica.fit(raw_fit, verbose="error")
     sig, muscle = _muscle_ics(ica, raw_fit, sfreq, max_ics=int(n_good * 0.20))
     eog = _eog_ics(ica, raw_fit)
     ica.exclude = sorted(set(muscle) | set(eog))
@@ -372,7 +372,7 @@ def apply_ica(
 ) -> np.ndarray:
     """用已拟合 ICA 清洗整段。``bad_channels`` 须与拟合时相同。"""
     raw = _raw(data_uv, ch_names, sfreq, montage, bad_channels)
-    return (ica.apply(raw.copy()).get_data(picks="eeg") * 1e6).astype(np.float32)
+    return (ica.apply(raw.copy(), verbose="error").get_data(picks="eeg") * 1e6).astype(np.float32)
 
 
 def interpolate_bads(

@@ -50,6 +50,7 @@ def test_complete_dataset_and_fresh_stats(tmp_path):
     config = tmp_path / "cfg.yaml"
     config.write_text("ica_enabled: false\n")
     original_bytes = path.read_bytes()
+    original_stats = (root / "meta/episodes_stats.jsonl").read_bytes()
     out = tmp_path / "out"
     assert main([str(root), "--output-dir", str(out), "--config", str(config)]) == 0
     assert path.read_bytes() == original_bytes
@@ -64,19 +65,12 @@ def test_complete_dataset_and_fresh_stats(tmp_path):
     assert updated["eeg_repair"]["feature"] == "observation.eeg_repair"
     target = path.with_name("observation.eeg_repair.parquet")
     assert target.exists()
-    assert (root / "meta/observation.eeg.audit.json").exists()
+    assert not (root / "meta/observation.eeg.audit.json").exists()
     assert not target.with_suffix(".audit.json").exists()
     assert updated["eeg_repair"]["records"][0]["data"].endswith("observation.eeg_repair.parquet")
-    assert updated["eeg_repair"]["records"][0]["audit"] == "meta/observation.eeg.audit.json"
+    assert "audit" not in updated["eeg_repair"]["records"][0]
     assert (root / "video.mp4").read_bytes() == b"video fixture"
-    stats = json.loads((root / "meta/episodes_stats.jsonl").read_text())["stats"]
-    values = np.stack(
-        [pq.read_table(target)[n].to_numpy() for n in original["features"]["observation.eeg"]["names"]],
-        axis=1,
-    )
-    assert stats["observation.eeg"] == {"mean": [999]}
-    np.testing.assert_allclose(stats["observation.eeg_repair"]["mean"], values.mean(axis=0))
-    assert stats["other"] == {"count": [10]}
+    assert (root / "meta/episodes_stats.jsonl").read_bytes() == original_stats
 
 
 def test_failure_and_dry_run_publish_nothing(tmp_path, monkeypatch):

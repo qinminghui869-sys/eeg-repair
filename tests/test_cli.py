@@ -7,7 +7,7 @@ from eeg_repair.cli import main
 from eeg_repair.inspection import inspect_file
 
 
-def test_batch_isolates_failures_and_preserves_episode_paths(tmp_path, monkeypatch):
+def test_batch_isolates_failures_and_preserves_episode_paths(tmp_path, monkeypatch, capsys):
     root = tmp_path / "input"
     for name in ("episode_001", "episode_002"):
         folder = root / name
@@ -26,6 +26,13 @@ def test_batch_isolates_failures_and_preserves_episode_paths(tmp_path, monkeypat
     monkeypatch.setattr("eeg_repair.pipeline.repair_file", repair)
     output = tmp_path / "output"
     assert main([str(root), "--config", str(cfg), "--output-dir", str(output)]) == 1
+    captured = capsys.readouterr()
+    text = captured.out + captured.err
+    assert "成功" in text
+    assert "失败" in text
+    assert "完成：成功 1，失败 1" in text
+    assert "DATASET FAILED" not in text
+    assert "QUARANTINED" not in text
     assert len(calls) == 2
     assert calls[1][1] == output / "episode_002" / "observation.eeg_repair.parquet"
     record = json.loads((output / "quarantine.jsonl").read_text())

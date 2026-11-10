@@ -10,13 +10,12 @@
 
 ## Unreleased
 
-- 保留修复审计文件：其中的参数、坏道、ICA 与哈希不能由 Parquet 重建。
-- 数据集模式将 `observation.eeg.audit.json` 写入 `meta/`。
+- 运行时不保留坏道、ICA 和参数审计文件。
 - 增加 `eeg-repair-qc`，检查修复结果的空值、非有限值、时间戳与缺帧。
 - 修复结果的 `timestamp` 限定为 float64 秒且严格递增，`episode_index` 限定为文件内恒定的 int64。
 - 按文件读取 mf-LeRobot 通道、采样率和设备名称，校验配置冲突。
 - 数据集模式输出完整独立副本，更新 meta/info.json 处理记录和 EEG 单位。
-- 重算逐 episode 的 EEG 统计，保留其他模态、时间轴、索引和路径模板。
+- 运行时不修改 `meta/episodes_stats.jsonl`。
 - 数据集级失败回滚，全部 episode 成功后发布；独立 Parquet 模式保持兼容。
 - 增加可选真实 EEG 数据契约测试（`EEG_TEST_DATA`）和数据集输出回归测试。
 - 暂定坐标资产与试运行配置改为通用命名（`configs/provisional.yaml`）。

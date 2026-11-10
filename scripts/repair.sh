@@ -109,7 +109,7 @@ else
 fi
 LOGS="$OUTPUT_DIR/logs"
 mkdir -p "$LOGS" || exit 2
-printf 'run_dir=%s\ninput=%s\n' "$OUTPUT_DIR" "$INPUT"
+printf '日志=%s\n输入=%s\n' "$OUTPUT_DIR" "$INPUT"
 
 cmd=(eeg-repair "$INPUT" --output-dir "$OUTPUT_DIR" --pattern "$PATTERN")
 if [[ -n "$CONFIG" ]]; then
@@ -140,7 +140,7 @@ else
     > "$LOGS/output_qc.json" 2> "$LOGS/output_qc.stderr.log"
 fi
 qc_rc=${PIPESTATUS[0]}
-printf 'repair_exit=%s\nqc_exit=%s\n' "$repair_rc" "$qc_rc" | tee "$LOGS/status.txt"
+printf 'repair_exit=%s\nqc_exit=%s\n' "$repair_rc" "$qc_rc" > "$LOGS/status.txt"
 if [[ "$repair_rc" -ne 0 ]]; then
   exit "$repair_rc"
 fi

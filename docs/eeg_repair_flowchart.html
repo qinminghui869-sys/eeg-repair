@@ -673,7 +673,7 @@ button.is-selected {
     "w": 240,
     "h": 64,
     "details": {
-      "desc": "<div class=\"desc-lead\">验证源文件、显式配置和电极坐标，不合格则隔离。默认时长至少 10 秒；数值有限，时间戳严格递增，实测中位采样率相对配置偏差不超过 0.5%。</div><ul class=\"desc-list\"><li>通道名单及单位必须显式配置，至少 4 个头皮导联。已有坐标必须有效且互不相同；缺少坐标不终止处理，这些通道不做球面插值。</li><li>源文件只读，输出和审计路径须未被占用。</li><li>低通截止频率必须低于源采样率的 Nyquist 频率。</li></ul>",
+      "desc": "<div class=\"desc-lead\">验证源文件、显式配置和电极坐标，不合格则隔离。默认时长至少 10 秒；数值有限，时间戳严格递增，实测中位采样率相对配置偏差不超过 0.5%。</div><ul class=\"desc-list\"><li>通道名单及单位必须显式配置，至少 4 个头皮导联。已有坐标必须有效且互不相同；缺少坐标不终止处理，这些通道不做球面插值。</li><li>源文件只读，输出路径须未被占用。</li><li>低通截止频率必须低于源采样率的 Nyquist 频率。</li></ul>",
       "inputs": "X_raw [C, T], Metadata",
       "outputs": "Bool (Pass / Reject)",
       "thresholds": "默认时长 ≥10 s；至少 4 个头皮通道；有限信号与有效坐标",
@@ -809,8 +809,8 @@ button.is-selected {
     "w": 245,
     "h": 60,
     "details": {
-      "desc": "<div class=\"desc-lead\">检查插值后的信号及待写出表，合格后另存修复结果。</div><ul class=\"desc-list\"><li>检查信号是否含 NaN / Inf，并记录坏道率、ICA 处理结果和球面插值结果。</li><li>确认通道数、顺序、采样率、采样点数与源数据一致。</li><li>确认时间戳、非脑电字段、行顺序、schema 与源表一致；单位已恢复。</li><li>插值失败或输出值溢出源浮点类型时，记录原因并隔离，保留原浮点存储精度及其舍入，不改写源格式。</li></ul>",
-      "inputs": "X_ref [C, T], source_table, source_schema, AuditLog",
+      "desc": "<div class=\"desc-lead\">检查插值后的信号及待写出表，合格后另存修复结果。</div><ul class=\"desc-list\"><li>检查信号是否含 NaN / Inf，以及通道数、坏道比例和插值结果是否可发布。</li><li>确认通道数、顺序、采样率、采样点数与源数据一致。</li><li>确认时间戳、非脑电字段、行顺序、schema 与源表一致；单位已恢复。</li><li>插值失败或输出值溢出源浮点类型时，记录原因并隔离，保留原浮点存储精度及其舍入，不改写源格式。</li></ul>",
+      "inputs": "X_ref [C, T], source_table, source_schema",
       "outputs": "Bool (Pass / Reject)",
       "thresholds": "信号有效；结构一致；原始时间轴与非脑电数据保持不变",
       "formula": "Pass = Finite(X_ref) ∧ SameShape ∧ SameSchema ∧ SameTimeAxis"
@@ -826,9 +826,9 @@ button.is-selected {
     "w": 265,
     "h": 52,
     "details": {
-      "desc": "<div class=\"desc-lead\">参照源 Parquet 的存储格式，输出独立的修复文件，绝不覆盖源文件。</div><ul class=\"desc-list\"><li>在源表副本中仅替换脑电信号值；保留列名、列顺序、数据类型、嵌套结构、元数据及原始单位。</li><li>保持行数、行顺序、时间戳、通道顺序及所有非脑电字段不变；保持压缩 codec 和行组大小；不承诺页布局及编码逐字节相同。</li><li>例如源文件 observation.eeg.parquet，另存为 observation.eeg_repair.parquet；目标已存在时拒绝覆盖，改用新输出目录重试。</li><li>坏道名单、规则命中明细、ICA 成分及插值结果写入独立审计文件，不给源表结构增列。</li><li>写出后重新读取，核对 schema、行数与非脑电字段。</li></ul>",
-      "inputs": "X_ref, source_table, source_schema, metadata, AuditLog",
-      "outputs": "独立的修复后 Parquet + 独立审计文件",
+      "desc": "<div class=\"desc-lead\">参照源 Parquet 的存储格式，输出独立的修复文件，绝不覆盖源文件。</div><ul class=\"desc-list\"><li>在源表副本中仅替换脑电信号值；保留列名、列顺序、数据类型、嵌套结构、元数据及原始单位。</li><li>保持行数、行顺序、时间戳、通道顺序及所有非脑电字段不变；保持压缩 codec 和行组大小；不承诺页布局及编码逐字节相同。</li><li>例如源文件 observation.eeg.parquet，另存为 observation.eeg_repair.parquet；目标已存在时拒绝覆盖，改用新输出目录重试。</li><li>写出后重新读取，核对 schema、行数与非脑电字段。不另存坏道、ICA 或参数记录。</li></ul>",
+      "inputs": "X_ref, source_table, source_schema, metadata",
+      "outputs": "独立的修复后 Parquet",
       "thresholds": "输出路径 ≠ 源路径；存储结构与源文件一致",
       "formula": "WriteParquet(new_path, ReplaceEEG(copy(source_table), X_ref), schema=source_schema)"
     }
@@ -843,9 +843,9 @@ button.is-selected {
     "w": 125,
     "h": 710,
     "details": {
-      "desc": "<div class=\"desc-lead\">任一阶段校验或处理失败时，记录 quarantine.jsonl 并继续批次内其他文件。源文件保持不变。</div><div class=\"desc-note\">包括输入格式、无效阻抗、坏道率超限、好道不足、插值失败、输出结构或回读验证失败；缺少坐标和 ICA 失败单独记录并继续。</div>",
+      "desc": "<div class=\"desc-lead\">任一阶段校验或处理失败时保留源文件，并继续批次内其他数据集。数据集失败只出现在运行日志；独立 Parquet 失败追加 quarantine.jsonl。</div><div class=\"desc-note\">包括输入格式、无效阻抗、坏道率超限、好道不足、插值失败、输出结构或回读验证失败。缺少坐标不终止处理。ICA 失败可降级继续，不另存记录。</div>",
       "inputs": "失败阶段、文件路径与原因",
-      "outputs": "隔离记录 + 告警",
+      "outputs": "运行日志；独立 Parquet 另有 quarantine.jsonl",
       "thresholds": "任一校验失败",
       "formula": "LogFailure(stage, reason); KeepSourceUnchanged"
     }

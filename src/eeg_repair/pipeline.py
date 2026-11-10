@@ -84,11 +84,9 @@ def repair_file(
     *,
     impedance: str | Path | None = None,
     dry_run: bool = False,
-    audit_path: str | Path | None = None,
 ) -> dict:
     record = read_recording(source, cfg)
     destination = Path(destination)
-    audit_destination = Path(audit_path) if audit_path is not None else destination.with_suffix(".audit.json")
     scalp, names = alg.scalp_names(list(cfg.channels))
     if len(names) < 4:
         raise ValueError("require at least four scalp electrodes")
@@ -99,7 +97,7 @@ def repair_file(
         candidate = record.path.with_name("observation.eeg_impedance.parquet")
         impedance = candidate if candidate.exists() else None
     prior = impedance_bads(Path(impedance) if impedance is not None else None, names, cfg)
-    if destination.resolve() == record.path or destination.exists() or audit_destination.exists():
+    if destination.resolve() == record.path or destination.exists():
         raise ValueError("destination must be new and distinct from source")
     if dry_run:
         return {
@@ -160,5 +158,5 @@ def repair_file(
         "reference": "all_scalp_after_interpolation",
         "versions": {name: importlib.metadata.version(name) for name in ("mne", "numpy", "scipy", "pyarrow")},
     }
-    publish(record, table, destination, audit, audit_path=audit_destination)
+    publish(record, table, destination)
     return audit

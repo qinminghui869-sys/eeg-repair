@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from pathlib import Path
 import hashlib
-import json
 import os
 import tempfile
 
@@ -131,30 +130,17 @@ def replace_signals(record: Recording, repaired_uv: np.ndarray, cfg: Config, sca
     return table
 
 
-def publish(
-    record: Recording,
-    table: pa.Table,
-    destination: str | Path,
-    audit: dict,
-    *,
-    audit_path: str | Path | None = None,
-) -> Path:
-    """Verify temporary files before atomic no-clobber publication (local filesystem)."""
+def publish(record: Recording, table: pa.Table, destination: str | Path) -> Path:
+    """Verify the temporary Parquet before atomic no-clobber publication."""
     destination = Path(destination).resolve()
-    audit_path = (
-        Path(audit_path).resolve() if audit_path is not None else destination.with_suffix(".audit.json")
-    )
-    if destination == record.path or audit_path == record.path:
+    if destination == record.path:
         raise ValueError("source must never be overwritten")
-    if destination.exists() or audit_path.exists():
-        raise FileExistsError(f"output or audit already exists: {destination}")
+    if destination.exists():
+        raise FileExistsError(f"repair output already exists: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    audit_path.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix=".eeg-repair-", suffix=".parquet", dir=destination.parent)
     os.close(fd)
     temporary = Path(name)
-    audit_temp = temporary.with_suffix(".json")
-    audit_published = False
     try:
         with pq.ParquetWriter(
             temporary, table.schema, compression=record.compression, use_compliant_nested_type=False
@@ -168,24 +154,7 @@ def publish(
             raise ValueError("Parquet read-back verification failed")
         if sha256(record.path) != record.source_hash:
             raise ValueError("source changed during processing")
-        audit = {
-            **audit,
-            "source_sha256": record.source_hash,
-            "output_sha256": sha256(temporary),
-            "source": str(record.path),
-            "output": str(destination),
-        }
-        audit_temp.write_text(
-            json.dumps(audit, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8"
-        )
-        os.link(audit_temp, audit_path)
-        audit_published = True
-        os.link(temporary, destination)  # Atomic; fails if destination already exists.
-    except BaseException:
-        if audit_published:
-            audit_path.unlink(missing_ok=True)
-        raise
+        os.link(temporary, destination)
     finally:
         temporary.unlink(missing_ok=True)
-        audit_temp.unlink(missing_ok=True)
     return destination
