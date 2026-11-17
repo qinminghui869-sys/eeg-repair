@@ -24,7 +24,7 @@ class Config:
     ica_enabled: bool = True
     ica_components: int = 32
     min_duration_s: float = 10.0
-    max_bad_ratio: float = 0.4
+    max_bad_ratio: float = 0.6
     impedance_threshold_kohm: float = 150.0
     impedance_unit: str = "ohm"
 

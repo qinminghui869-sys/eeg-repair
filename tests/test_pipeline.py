@@ -95,6 +95,36 @@ def test_dry_run_writes_nothing(tmp_path):
     assert not output.parent.exists()
 
 
+def test_quality_from_bad_rate_boundaries():
+    assert alg.quality_from_bad_rate(0.0) == "excellent"
+    assert alg.quality_from_bad_rate(0.4) == "excellent"
+    assert alg.quality_from_bad_rate(0.4000001) == "good"
+    assert alg.quality_from_bad_rate(0.6) == "good"
+
+
+def test_publish_gate_allows_up_to_max_bad_ratio(tmp_path, monkeypatch):
+    cfg, path, _ = make_recording(tmp_path)
+    scalp = list(NAMES)
+
+    def mark_half(data, names, sfreq, montage):
+        bad = names[:4]
+        return {"bad_channels": bad, "bad_rate": 0.5, "passed": False}
+
+    monkeypatch.setattr(alg, "mark_bad_channels", mark_half)
+    audit = repair_file(path, tmp_path / "half.parquet", replace(cfg, max_bad_ratio=0.6))
+    assert audit["quality"] == "good"
+    assert audit["bad_rate"] == 0.5
+    assert audit["n_bad"] == 4
+    assert audit["n_scalp"] == len(scalp)
+
+    def mark_all(data, names, sfreq, montage):
+        return {"bad_channels": list(names), "bad_rate": 1.0, "passed": False}
+
+    monkeypatch.setattr(alg, "mark_bad_channels", mark_all)
+    with pytest.raises(ValueError, match="insufficient good channels"):
+        repair_file(path, tmp_path / "all_bad.parquet", replace(cfg, max_bad_ratio=0.6))
+
+
 def test_reference_rule_exemptions():
     assert not alg._is_bad("Fp1", False, True, False, False, False)
     assert alg._is_bad("F7", False, True, False, False, False)

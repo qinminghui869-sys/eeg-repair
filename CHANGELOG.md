@@ -10,17 +10,10 @@
 
 ## Unreleased
 
-- 运行时不保留坏道、ICA 和参数审计文件。
-- 增加 `eeg-repair-qc`，检查修复结果的空值、非有限值、时间戳与缺帧。
-- 修复结果的 `timestamp` 限定为 float64 秒且严格递增，`episode_index` 限定为文件内恒定的 int64。
-- 按文件读取 mf-LeRobot 通道、采样率和设备名称，校验配置冲突。
-- 数据集模式输出完整独立副本，更新 meta/info.json 处理记录和 EEG 单位。
-- 运行时不修改 `meta/episodes_stats.jsonl`。
-- 数据集级失败回滚，全部 episode 成功后发布；独立 Parquet 模式保持兼容。
-- 增加可选真实 EEG 数据契约测试（`EEG_TEST_DATA`）和数据集输出回归测试。
-- 暂定坐标资产与试运行配置改为通用命名（`configs/provisional.yaml`）。
-- 数据集模式把 `observation.eeg_repair.parquet` 写回原数据目录，并在该数据集的 `meta/info.json` 登记对应特征。原始 `observation.eeg.parquet` 不覆盖。
-- 增加通用脚本 `scripts/repair.sh`，依次执行预检、修复和结构质检。
-- 默认陷波改为只做 50 Hz，与参考预处理一致。
-- 缺少电极坐标时不再终止处理：不猜测位置，这些通道不参与球面插值。
-- `F11/F12/FT11/FT12` 改为使用 CURRY 公布的 PAN 坐标（毫米换算为米），不再使用相似变换结果。
+- 数据集模式把 `observation.eeg_repair.parquet` 写回源目录，并在 `meta/info.json` 登记特征与单位。源 Parquet 不覆盖。失败时回滚该数据集本次新增文件。
+- 已发布记录写入 `eeg_repair.quality`，以及每条记录的 `quality`、`bad_rate`、`n_bad`、`n_scalp`。坏道比例大于 0.60 或好道少于 4 个则不发布；不超过 0.40 为 `excellent`，其余已发布记录为 `good`。
+- 增加 `scripts/repair.sh` 与 `scripts/backfill_eeg_quality.py`。回填只改 `info.json`，不重写 Parquet。
+- 运行时不写审计文件，也不改 `meta/episodes_stats.jsonl`。
+- 增加 `eeg-repair-qc`。`timestamp` 为 float64 秒且严格递增，`episode_index` 为文件内恒定 int64。
+- 默认陷波只做 50 Hz。缺少坐标时不终止、不猜位置，这些通道不参与球面插值。
+- `F11/F12/FT11/FT12` 使用公布的 PAN 坐标（毫米换算为米）。试运行配置为 `configs/provisional.yaml`。

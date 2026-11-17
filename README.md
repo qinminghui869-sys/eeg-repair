@@ -2,38 +2,34 @@
 
 CPU 上的 EEG Parquet 修复工具。对头皮导联做预处理后另存结构相同的 Parquet，源文件不覆盖。不下载模型，不改变采样率与通道数。
 
-处理顺序：**滤波 → 阻抗检查 → 坏道检测 → ICA 去伪迹 → 坏道插值 → 平均参考**。
+处理顺序：**阻抗检查 → 滤波 → 坏道检测 → ICA 去伪迹 → 坏道插值 → 平均参考**。阻抗在滤波前读取，判定不使用滤波后的波形。
 
-<table>
-  <thead>
-    <tr><th>步骤</th><th>参数</th><th>默认值</th></tr>
-  </thead>
-  <tbody>
-    <tr><td rowspan="5">滤波</td><td>去直流</td><td>每个头皮通道减去自身时间中位数</td></tr>
-    <tr><td>带通</td><td>0.5–100 Hz；FIR，零相位，Hamming 窗，firwin</td></tr>
-    <tr><td>低通上限</td><td>100 Hz 与 Nyquist−1 Hz 中的较小值</td></tr>
-    <tr><td>陷波</td><td>50 Hz；FIR，零相位</td></tr>
-    <tr><td>滤波长度、过渡带</td><td>使用 MNE 自动值</td></tr>
-    <tr><td rowspan="3">阻抗检查</td><td>输入</td><td>同目录 <code>observation.eeg_impedance.parquet</code>；没有该文件则跳过</td></tr>
-    <tr><td>坏道阈值</td><td>任一快照 ≥ 150 kΩ</td></tr>
-    <tr><td>文件单位</td><td><code>ohm</code>，先换算为 kΩ 再比较</td></tr>
-    <tr><td rowspan="6">坏道检测</td><td>flat</td><td>标准差 &lt; 0.2 µV，且相邻差分 &lt; 0.02 µV 的占比 &gt; 0.7</td></tr>
-    <tr><td>contact</td><td>稳健 z &gt; 3.5，或 z &gt; 3.0 且标准差 &gt; 25 µV；仅 FP1、FP2、FPZ、AF3、AF4 单独命中时豁免</td></tr>
-    <tr><td>bridge</td><td>记录短于 10 秒则跳过；2 秒分段，最近 4 个近邻的电学距离过小</td></tr>
-    <tr><td>correlation</td><td>1 秒窗口内最大绝对相关 &lt; 0.4 的占比 &gt; 20%；仅此项命中时不记坏道</td></tr>
-    <tr><td>hfnoise</td><td>50 Hz 分界的四阶 Butterworth 高低频比，稳健 z &gt; 5；只用于判定，不写入结果</td></tr>
-    <tr><td>发布条件</td><td>坏道比例 &gt; 0.40，或好道少于 4 个时，该记录不发布</td></tr>
-    <tr><td rowspan="5">ICA 去伪迹</td><td>拟合数据</td><td>另做 1–100 Hz 副本，不串联到输出支路</td></tr>
-    <tr><td>算法</td><td>Infomax，最多 32 个成分，随机种子 97，最多 500 次迭代</td></tr>
-    <tr><td>最短时长</td><td>短于 5 秒或拟合失败时跳过，继续后续步骤</td></tr>
-    <tr><td>肌电</td><td>30–100 Hz 与 1–30 Hz 能量比的稳健 z &gt; 3，剔除数量不超过好道数的 20%</td></tr>
-    <tr><td>眼电</td><td>用 FP1、FP2、FPZ 作代理，最多剔除 2 个成分</td></tr>
-    <tr><td rowspan="2">坏道插值</td><td>方法</td><td>球面样条，只重建有坐标的坏道</td></tr>
-    <tr><td>无坐标通道</td><td>保持滤波和 ICA 后的原值</td></tr>
-    <tr><td rowspan="2">平均参考</td><td>范围</td><td>插值后的全部头皮通道</td></tr>
-    <tr><td>不参与的通道</td><td>IO、TRIG、TRIGGER、VEOG、HEOG、EKG、EMG，原值保留</td></tr>
-  </tbody>
-</table>
+| 步骤 | 参数 | 默认值 |
+| --- | --- | --- |
+| 阻抗检查 | 输入 | 同目录 `observation.eeg_impedance.parquet`；没有该文件则跳过 |
+| 阻抗检查 | 坏道阈值 | 任一快照 ≥ 150 kΩ |
+| 阻抗检查 | 文件单位 | `ohm`，先换算为 kΩ 再比较 |
+| 滤波 | 去直流 | 每个头皮通道减去自身时间中位数 |
+| 滤波 | 带通 | 0.5–100 Hz；FIR，零相位，Hamming 窗，firwin |
+| 滤波 | 低通上限 | 100 Hz 与 Nyquist−1 Hz 中的较小值 |
+| 滤波 | 陷波 | 50 Hz；FIR，零相位 |
+| 滤波 | 滤波长度、过渡带 | 使用 MNE 自动值 |
+| 坏道检测 | flat | 标准差 < 0.2 µV，且相邻差分 < 0.02 µV 的占比 > 0.7 |
+| 坏道检测 | contact | 稳健 z > 3.5，或 z > 3.0 且标准差 > 25 µV；仅 FP1、FP2、FPZ、AF3、AF4 单独命中时豁免 |
+| 坏道检测 | bridge | 记录短于 10 秒则跳过；2 秒分段，最近 4 个近邻的电学距离过小 |
+| 坏道检测 | correlation | 1 秒窗口内最大绝对相关 < 0.4 的占比 > 20%；仅此项命中时不记坏道 |
+| 坏道检测 | hfnoise | 50 Hz 分界的四阶 Butterworth 高低频比，稳健 z > 5；只用于判定，不写入结果 |
+| 坏道检测 | 发布条件 | 坏道比例 > 0.60，或好道少于 4 个时，该记录不发布 |
+| 坏道检测 | 质量等级 | 已发布记录：≤0.40 为 `excellent`，0.40–0.60 为 `good` |
+| ICA 去伪迹 | 拟合数据 | 另做 1–100 Hz 副本，不串联到输出支路 |
+| ICA 去伪迹 | 算法 | Infomax，最多 32 个成分，随机种子 97，最多 500 次迭代 |
+| ICA 去伪迹 | 最短时长 | 短于 5 秒或拟合失败时跳过，继续后续步骤 |
+| ICA 去伪迹 | 肌电 | 30–100 Hz 与 1–30 Hz 能量比的稳健 z > 3，剔除数量不超过好道数的 20% |
+| ICA 去伪迹 | 眼电 | 用 FP1、FP2、FPZ 作代理，最多剔除 2 个成分 |
+| 坏道插值 | 方法 | 球面样条，只重建有坐标的坏道 |
+| 坏道插值 | 无坐标通道 | 保持滤波和 ICA 后的原值 |
+| 平均参考 | 范围 | 插值后的全部头皮通道 |
+| 平均参考 | 不参与的通道 | IO、TRIG、TRIGGER、VEOG、HEOG、EKG、EMG，原值保留 |
 
 ## 环境
 
@@ -65,17 +61,13 @@ scripts/repair.sh <file.parquet> --config configs/eeg_repair.yaml --output-dir o
 | `--pattern GLOB` | 目录模式下的输入文件名，默认 `observation.eeg.parquet`。 |
 | `--impedance FILE` | 仅单文件模式。目录模式自动读取同目录的 `observation.eeg_impedance.parquet`。 |
 
-数据集模式把 `observation.eeg_repair.parquet` 写回源数据目录。此时 `--output-dir` 只接收日志。原始 `observation.eeg.parquet` 不覆盖。
-
-退出码：`0` 全部成功，`1` 处理或质检失败，`2` 输入或配置错误。预检失败时不继续修复。
-
-## 命令
+数据集模式把 `observation.eeg_repair.parquet` 写回源数据目录。此时 `--output-dir` 只接收日志。原始 `observation.eeg.parquet` 不覆盖。退出码：`0` 全部成功，`1` 处理或质检失败，`2` 输入或配置错误。预检失败时不继续修复。
 
 | 命令 | 作用 |
 | --- | --- |
 | `eeg-repair` | 修复并写出结果 |
 | `eeg-repair-inspect` | 只读检查输入，并可生成配置模板 |
-| `eeg-repair-qc` | 检查空值、缺帧与时间戳约定 |
+| `eeg-repair-qc` | 检查空值、缺帧与时间戳，把 JSON 打到标准输出 |
 
 只检查、不修复：
 
@@ -85,35 +77,24 @@ eeg-repair <input> --config <config.yaml> --output-dir <dir> --dry-run
 eeg-repair-qc <dataset-dir>
 ```
 
-`--dry-run` 只校验输入、坐标和输出路径，不写文件。`eeg-repair-qc` 把 JSON 打到标准输出，不改输入。目录模式默认匹配 `observation.eeg_repair.parquet`。
+`--dry-run` 只校验输入、坐标和输出路径，不写文件。`eeg-repair-qc` 不改输入，目录模式默认匹配 `observation.eeg_repair.parquet`。已发布但还没有质量等级时，用 `scripts/backfill_eeg_quality.py` 按同一套坏道规则回填 `info.json`，不重写 Parquet。
 
 ## 输入与输出
 
-每行一个采样点。
+每行一个采样点。`columns` 布局每个通道一列，处理范围由 `channels` 指定。`vector` 布局的 `signal_column` 为浮点 list，元素顺序与 `channels` 一致。不支持把整段波形放进一个单元格、ADC 整数，以及自动比例换算。
 
-| 布局 | 要求 |
-| --- | --- |
-| `columns` | 每个通道一列，处理范围由 `channels` 指定。 |
-| `vector` | `signal_column` 为浮点 list，元素顺序与 `channels` 一致。 |
+`timestamp` 为 float64 秒，有限、非负且严格递增，采样率与配置一致。`episode_index` 为文件内恒定的 int64。时间戳沿用输入，不重建、不平移。字段名、类型、嵌套结构、schema 元数据、行数和非脑电字段均保留。辅助通道、发布条件和质量等级见上面的参数表。
 
-不支持把整段波形放进一个单元格、ADC 整数，以及自动比例换算。
-
-`timestamp` 为 float64 秒，有限、非负且严格递增，采样率与配置一致。`episode_index` 为文件内恒定的 int64。时间戳沿用输入，不重建、不平移。字段名、类型、嵌套结构、schema 元数据、行数和非脑电字段均保留。
-
-`IO`、`TRIG`、`VEOG`、`HEOG`、`EKG`、`EMG` 不参与滤波、ICA、插值和平均参考，原值保留。可用头皮通道不得少于 4 个。坏道比例大于 40% 时该记录不发布。阻抗快照中任一值不低于 150 kΩ 的通道记为坏道。
-
-数据集模式会改这两个文件：
+数据集模式成功后改这两个文件：
 
 | 文件 | 动作 |
 | --- | --- |
-| 与源文件同目录的 `observation.eeg_repair.parquet` | 新增。滤波、去伪迹、坏道修复后的脑电。 |
-| 该数据集的 `meta/info.json` | 增加 `features.observation.eeg_repair` 和 `eeg_repair` 记录。 |
+| 与源文件同目录的 `observation.eeg_repair.parquet` | 新增修复后的脑电。 |
+| 该数据集的 `meta/info.json` | 增加 `features.observation.eeg_repair`，以及 `eeg_repair.quality` 和每条记录的 `quality`、`bad_rate`、`n_bad`、`n_scalp`。路径模板与主时钟字段保持不变。 |
 
 不改 `observation.eeg.parquet`、阻抗文件、`meta/episodes_stats.jsonl` 和其他模态。不另存坏道、ICA 或参数记录。存在旧式 `meta/stats.json` 时拒绝发布。处理中的临时目录在结束时删除。任一 episode 失败时，该数据集本次新增的修复文件会被删除，`meta/info.json` 恢复为运行前内容；同批其他数据集继续。
 
-独立 Parquet 的结果写到 `--output-dir`：成功为 `<stem>_repair.parquet`，失败追加 `quarantine.jsonl`。
-
-`scripts/repair.sh` 另在日志目录写入 `logs/preflight.log`、`logs/repair.log`、`logs/output_qc.json` 和 `logs/status.txt`。`--dry-run` 与 `eeg-repair-qc` 不改数据集。
+独立 Parquet 的结果写到 `--output-dir`：成功为 `<stem>_repair.parquet`，失败追加 `quarantine.jsonl`。`scripts/repair.sh` 另在日志目录写入 `logs/preflight.log`、`logs/repair.log`、`logs/output_qc.json` 和 `logs/status.txt`。
 
 发布前校验源文件 SHA-256。结果先写临时文件，回读通过后原子发布且不可覆盖。压缩 codec 与行组大小沿用源文件。结构质检通过或坐标覆盖完整，都不表示帽型定位或生理有效性已验证。ICA 异常可降级继续。
 
@@ -129,29 +110,20 @@ eeg-repair-qc <dataset-dir>
 | `configs/eeg_repair.yaml` | 250 Hz、µV 的参数示例，不代表特定设备的单位。 |
 | `configs/provisional.yaml` | 缺少完整实测坐标时的显式试运行配置。单位仍须按批次确认。 |
 
-`configs/provisional.yaml` 使用仓库内暂定坐标。`F11/F12/FT11/FT12` 采用 [CURRY 公布的 PAN 坐标](https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html)，由毫米换算为米；`Cb1/Cb2/Cbz` 对应模板的 `I1/I2/Iz`。这些都不是个体实测，也不等同于厂家完整 128 导帽验证。生成方式见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
+`configs/provisional.yaml` 使用仓库内暂定坐标。`F11/F12/FT11/FT12` 采用 [CURRY 公布的 PAN 坐标](https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html)，由毫米换算为米；`Cb1/Cb2/Cbz` 对应模板的 `I1/I2/Iz`。这些都不是个体实测。生成方式见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
 
 ## 目录
 
 ```text
-src/eeg_repair/    命令、管线、算法、Parquet 与数据集契约
-configs/           设备配置与暂定坐标
-scripts/repair.sh  预检、修复、质检
-docs/              算法边界、来源、验证与流程图
-tests/             数值、契约与异常路径
+src/eeg_repair/                  命令、管线、算法、Parquet 与数据集契约
+configs/                         设备配置与暂定坐标
+scripts/repair.sh                预检、修复、质检
+scripts/backfill_eeg_quality.py  为已发布数据集回填质量等级
+docs/                            算法边界、来源、验证与流程图
+tests/                           数值、契约与异常路径
 ```
 
-`outputs/` 只放本地运行日志和独立 Parquet 结果，已加入 `.gitignore`。
-
-## 开发
-
-```bash
-ruff check src tests
-ruff format --check src tests
-pytest -q
-```
-
-设置 `EEG_TEST_DATA` 指向本地数据集可启用真实 Parquet 契约测试；未设置时相关用例跳过。测试通过表示实现符合上述约定，不代表设备数据的生理有效性已验收。提交前检查与代码边界见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+`outputs/` 只放本地运行日志和独立 Parquet 结果，已加入 `.gitignore`。提交前检查见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 文档
 

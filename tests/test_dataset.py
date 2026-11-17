@@ -67,8 +67,14 @@ def test_complete_dataset_and_fresh_stats(tmp_path):
     assert target.exists()
     assert not (root / "meta/observation.eeg.audit.json").exists()
     assert not target.with_suffix(".audit.json").exists()
-    assert updated["eeg_repair"]["records"][0]["data"].endswith("observation.eeg_repair.parquet")
-    assert "audit" not in updated["eeg_repair"]["records"][0]
+    record = updated["eeg_repair"]["records"][0]
+    assert record["data"].endswith("observation.eeg_repair.parquet")
+    assert "audit" not in record
+    assert record["quality"] == "excellent"
+    assert updated["eeg_repair"]["quality"] == "excellent"
+    assert 0 <= record["bad_rate"] <= 0.4
+    assert record["n_bad"] == int(round(record["bad_rate"] * record["n_scalp"]))
+    assert record["n_scalp"] == 8
     assert (root / "video.mp4").read_bytes() == b"video fixture"
     assert (root / "meta/episodes_stats.jsonl").read_bytes() == original_stats
 

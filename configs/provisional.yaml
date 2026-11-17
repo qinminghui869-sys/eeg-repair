@@ -6,3 +6,4 @@ montage: colin27_1005
 montage_csv: montages/provisional_full.csv
 montage_report: montages/provisional_full.registration.json
 ica_enabled: true
+max_bad_ratio: 0.6

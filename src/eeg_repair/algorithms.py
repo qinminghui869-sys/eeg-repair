@@ -18,7 +18,15 @@ CONTACT_EXEMPT = frozenset({"FP1", "FP2", "FPZ", "AF3", "AF4"})
 EOG_PROXY = ("FP1", "FP2", "FPZ")
 MAX_EOG_ICS = 2
 PASS_BAD_RATE = 0.30
+EXCELLENT_BAD_RATE = 0.40
 ICA_FIT_L_FREQ = 1.0
+
+
+def quality_from_bad_rate(rate: float) -> str:
+    """Publish-tier label after the max_bad_ratio gate: excellent (<=0.40) or good (<=0.60)."""
+    if rate <= EXCELLENT_BAD_RATE:
+        return "excellent"
+    return "good"
 
 
 def _mad(x: np.ndarray) -> float:

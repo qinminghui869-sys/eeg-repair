@@ -551,7 +551,7 @@ button.is-selected {
         <h2 class="header-title">EEG 预处理与坏道球面插值 DAG 架构</h2>
         <span class="header-badge">14 节点 · 16 有向边</span>
       </div>
-      <p class="header-subtitle">复合滤波 → 阻抗检测（有数据时） → 五指标看坏道与大伪迹导联 → ICA 去伪迹 → 坏道球面样条插值。保持原通道数与采样率，源文件不变，按源文件存储格式另存修复后 Parquet。</p>
+      <p class="header-subtitle">阻抗检查（有文件时，在滤波前）→ 0.5–100 Hz 带通与 50 Hz 陷波 → 五指标。坏道比例大于 0.60 或好道少于 4 个则停止，否则 ICA → 只插值有坐标的坏道 → 平均参考 → 另存 Parquet。已发布记录按坏道比例标 excellent（≤0.40）或 good（0.40–0.60），写入 meta/info.json。</p>
     </div>
 
     <!-- Controls Toolbar -->
@@ -627,7 +627,7 @@ button.is-selected {
   </div>
 
   <script>
-    // 主干：复合滤波 → 阻抗检测（有数据时） → 五指标 → ICA → 球面样条插值。
+    // 主干：阻抗检查 → 复合滤波 → 五指标 → 发布门控 → ICA → 有坐标坏道插值 → 平均参考 → 另存。
     const NODES = [
   {
     "id": "S",
@@ -639,11 +639,11 @@ button.is-selected {
     "w": 130,
     "h": 38,
     "details": {
-      "desc": "<div class=\"desc-lead\">流水线触发入口，为单次 Episode 建立批处理上下文。</div><ul class=\"desc-list\"><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">创建上下文</span>：分配本次运行的临时目录与中间产物路径。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">分配会话 ID</span>：贯穿全流程的追踪标识，用于串联审计日志与隔离记录。</div></li></ul>",
-      "inputs": "触发信号 (Event Stream / Episode Path)",
-      "outputs": "Context { session_id, episode_dir }",
+      "desc": "<div class=\"desc-lead\">从数据集目录或独立 Parquet 进入修复。不分配会话 ID，也不写审计日志。</div><ul class=\"desc-list\"><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">数据集模式</span>：在数据集根目录建立临时目录，发布后删除。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">预检</span>：<code>scripts/repair.sh</code> 先做只读校验，通过后才写修复文件。</div></li></ul>",
+      "inputs": "数据集目录或 Parquet 路径",
+      "outputs": "待处理的 observation.eeg.parquet 列表",
       "thresholds": "无",
-      "formula": "PipelineContext(session_id = UUIDv4())"
+      "formula": "Repair(input)"
     }
   },
   {
@@ -684,9 +684,9 @@ button.is-selected {
     "id": "F",
     "label": "复合滤波\n0.5Hz高通滤波、100Hz低通滤波、50 Hz 陷波",
     "type": "process",
-    "stage": "阶段 2 · 复合滤波",
+    "stage": "阶段 3 · 复合滤波",
     "x": 240,
-    "y": 280,
+    "y": 465,
     "w": 290,
     "h": 56,
     "details": {
@@ -699,15 +699,15 @@ button.is-selected {
   },
   {
     "id": "C",
-    "label": "是否有阻抗数据?\n有则额外检测，无则直接五指标",
+    "label": "是否有阻抗文件?\n滤波前读取",
     "type": "decision",
-    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "stage": "阶段 2 · 阻抗检查",
     "x": 240,
-    "y": 370,
+    "y": 280,
     "w": 270,
     "h": 64,
     "details": {
-      "desc": "<div class=\"desc-lead\">只判断有没有硬件阻抗。有阻抗时多看一步阻抗；没有阻抗就直接用五个指标。两条路之后都用同一套五指标看坏道和大伪迹导联。</div><ul class=\"desc-list\"><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">检查路径</span>：<code>&lt;episode_dir&gt;/observation.eeg_impedance.parquet</code>，如 <code>/data/chunk-000/episode_000000/</code>。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">有阻抗 → 节点 D</span>：额外做阻抗检测，完成后再进入节点 M2 的五指标。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">无阻抗 → 节点 M</span>：不做阻抗、也不做幅值反推，把滤波后数据直接送去节点 M2。</div></li></ul><div class=\"desc-note\">阻抗只是有数据时的附加检查，不代替五个指标。32 通道数据通常没有阻抗文件，照样用五指标判坏道和大伪迹导联。</div>",
+      "desc": "<div class=\"desc-lead\">在滤波之前只判断有没有硬件阻抗。有文件则先记下阻抗坏道，没有文件则 B_imp 为空。两条路接着都做同一套滤波和五指标。</div><ul class=\"desc-list\"><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">检查路径</span>：与源 Parquet 同目录的 <code>observation.eeg_impedance.parquet</code>。单文件模式也可在命令行指定。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">有阻抗 → 节点 D</span>：任一快照 ≥ 150 kΩ 记入 B_imp，然后进入滤波。</div></li><li><span class=\"desc-step is-dot\">·</span><div><span class=\"desc-key\">无阻抗 → 节点 M</span>：不读阻抗，也不做幅值反推，B_imp 为空，然后进入滤波。</div></li></ul><div class=\"desc-note\">阻抗不使用滤波后的波形。它在五指标之后并入坏道名单，不代替五个指标。</div>",
       "inputs": "Episode Directory Path",
       "outputs": "Bool (HasImpedance)",
       "thresholds": "observation.eeg_impedance.parquet 是否存在",
@@ -718,47 +718,47 @@ button.is-selected {
     "id": "D",
     "label": "额外：阻抗检测\n≥ 150 kΩ 记入坏道",
     "type": "process",
-    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "stage": "阶段 2 · 阻抗检查",
     "x": 115,
-    "y": 465,
+    "y": 370,
     "w": 215,
     "h": 54,
     "details": {
-      "desc": "<div class=\"desc-lead\">读取同目录 observation.eeg_impedance.parquet（或单文件命令行指定路径）。当前契约为各通道独立数值列，单位由 impedance_unit 明确指定。</div><div class=\"desc-note\">任一快照 ≥150 kΩ 记为阻抗坏道；有文件但字段缺失或值无效时隔离，不静默跳过。两份现有 EEG 样本均未附阻抗文件。</div>",
-      "inputs": "observation.eeg_impedance.parquet, X_filt",
-      "outputs": "B_imp [C], X_filt（送往 M2）",
+      "desc": "<div class=\"desc-lead\">滤波前读取同目录 observation.eeg_impedance.parquet（或单文件命令行指定路径）。各通道为独立数值列，单位由 impedance_unit 指定。</div><div class=\"desc-note\">文件单位为 ohm 时先除以 1000。任一快照 ≥150 kΩ 记为阻抗坏道。文件为空、缺通道或数值无效时隔离，不静默跳过。</div>",
+      "inputs": "observation.eeg_impedance.parquet",
+      "outputs": "B_imp [C]，随后进入滤波",
       "thresholds": "有阻抗文件时：实测 ≥ 150 kΩ 额外记坏",
       "formula": "B_imp(c) = 𝕀(max_t Z(c,t) ≥ 150 kΩ)"
     }
   },
   {
     "id": "M",
-    "label": "无阻抗\n直接用五指标看坏道与大伪迹",
+    "label": "无阻抗\nB_imp 为空，进入滤波",
     "type": "process",
-    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "stage": "阶段 2 · 阻抗检查",
     "x": 370,
-    "y": 465,
+    "y": 370,
     "w": 235,
     "h": 54,
     "details": {
-      "desc": "<div class=\"desc-lead\">没有阻抗文件时不另做先验。不读阻抗，也不再用 0.5–4 Hz 的 RMS 幅值反推坏道，滤波后的数据直接进入节点 M2。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">确认无阻抗</span>：本 Episode 没有 <code>observation.eeg_impedance.parquet</code>。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">跳过阻抗检测</span>：B_imp 为空，不产生额外坏道。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">交给五指标</span>：节点 M2 用 flat / contact / bridge / correlation / hfnoise 看坏道和大伪迹导联。</div></li></ul><div class=\"desc-note\">有阻抗与无阻抗的差别只在节点 D 多出来的那一步。五指标本身两条路相同。</div>",
-      "inputs": "X_filt [C, T]",
-      "outputs": "X_filt（送往 M2），B_imp = ∅",
+      "desc": "<div class=\"desc-lead\">没有阻抗文件时不另做先验。不读阻抗，也不用幅值反推坏道，接着进入滤波。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">确认无阻抗</span>：同目录没有 <code>observation.eeg_impedance.parquet</code>，命令行也未指定。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">跳过阻抗检测</span>：B_imp 为空。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">进入滤波</span>：滤波之后，节点 M2 再用五个指标，并与空的 B_imp 合并。</div></li></ul><div class=\"desc-note\">有阻抗与无阻抗的差别只在 B_imp。滤波和五指标两条路相同。</div>",
+      "inputs": "源 Parquet 路径",
+      "outputs": "B_imp = ∅，随后进入滤波",
       "thresholds": "无幅值反推阈值",
-      "formula": "B_imp = ∅,  下一步 = M2(X_filt)"
+      "formula": "B_imp = ∅,  下一步 = Filter"
     }
   },
   {
     "id": "M2",
     "label": "五指标看坏道与大伪迹导联\nflat/contact/bridge/corr/hfnoise",
     "type": "process",
-    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "stage": "阶段 4 · 坏道检测与发布门控",
     "x": 240,
     "y": 555,
     "w": 300,
     "h": 58,
     "details": {
-      "desc": "<div class=\"desc-lead\">有阻抗、无阻抗都必经本节点。先排除辅助导联（VEOG / HEOG / EKG / EMG / TRIGGER / IO），再对头皮导联用五个指标同时看坏道和大伪迹导联。有阻抗时，再把节点 D 的 B_imp 并进坏道。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">flat</span>（死道 / 平坦）：std &lt; 0.2 µV <em>且</em> 相邻采样差分 &lt; 0.02 µV 的占比 &gt; 0.7。计入坏道。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">contact</span>（接触差 / 相对高振幅）：对通道 std 做中位数 + MAD 稳健 z：<ul class=\"desc-sub\"><li>hard：z &gt; 3.5</li><li>soft：z &gt; 3.0 且 std &gt; 25 µV</li></ul>命中即记为大伪迹导联；未被前额豁免时同时计入坏道。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">bridge</span>（电极桥接）：按约 2 s 切 epoch，对通道对算电学距离 ED = var_i + var_j − 2·cov_ij；多数 epoch 的 ED &lt; 16 µV² 且不超过邻接中位的一半时，两端通道同时判坏。信号短于 10 s 跳过本规则。</div></li><li><span class=\"desc-step\">4</span><div><span class=\"desc-key\">correlation</span>（相关过低）：按 1 s 滑窗取该通道与其它通道的最大绝对相关，&lt; 0.4 的窗口占比 &gt; 20% 即命中。</div></li><li><span class=\"desc-step\">5</span><div><span class=\"desc-key\">hfnoise</span>（高频噪声）：以 50 Hz 为界计算高频相对低频的噪声指数，再做中位数 + MAD 稳健 z，z &gt; 5。计入坏道，同时记为大伪迹导联。</div></li></ul><div class=\"desc-note\"><span class=\"desc-key\">坏道与大伪迹导联</span>：<ul class=\"desc-sub\"><li>坏道 B_five = flat ∨ bridge ∨ hfnoise ∨ (contact ∧ ¬豁免) ∨ (correlation ∧ 同时命中其它规则)。correlation 单独命中只记预警。</li><li>大伪迹导联 A_art = contact ∨ hfnoise。前额 Fp1 / Fp2 / Fpz / AF3 / AF4 仅被 contact 命中时不进坏道，但仍记为大伪迹导联，交节点 P 的 ICA 处理。F7 / F8 不豁免。</li><li>有阻抗：B_total = B_five ∪ B_imp。无阻抗：B_total = B_five。</li></ul></div><div class=\"desc-note\">实现见 <code>eeg_repair.algorithms.mark_bad_channels</code>；五条规则的阈值是该模块常量，不随 YAML 变动。坏道率 = 坏道数 / 头皮导联数，&lt; 0.30 记 passed。联合阻抗坏道后，坏道率 &gt; max_bad_ratio（默认 0.40）或好道少于 4 个时隔离。</div>",
+      "desc": "<div class=\"desc-lead\">有阻抗、无阻抗都必经本节点。先排除辅助导联（VEOG / HEOG / EKG / EMG / TRIGGER / TRIG / IO），再对头皮导联用五个指标同时看坏道和大伪迹导联。有阻抗时，再把节点 D 的 B_imp 并进坏道。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">flat</span>（死道 / 平坦）：std &lt; 0.2 µV <em>且</em> 相邻采样差分 &lt; 0.02 µV 的占比 &gt; 0.7。计入坏道。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">contact</span>（接触差 / 相对高振幅）：对通道 std 做中位数 + MAD 稳健 z：<ul class=\"desc-sub\"><li>hard：z &gt; 3.5</li><li>soft：z &gt; 3.0 且 std &gt; 25 µV</li></ul>命中即记为大伪迹导联；未被前额豁免时同时计入坏道。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">bridge</span>（电极桥接）：按约 2 s 切 epoch，对通道对算电学距离 ED = var_i + var_j − 2·cov_ij；多数 epoch 的 ED &lt; 16 µV² 且不超过邻接中位的一半时，两端通道同时判坏。信号短于 10 s 跳过本规则。</div></li><li><span class=\"desc-step\">4</span><div><span class=\"desc-key\">correlation</span>（相关过低）：按 1 s 滑窗取该通道与其它通道的最大绝对相关，&lt; 0.4 的窗口占比 &gt; 20% 即命中。</div></li><li><span class=\"desc-step\">5</span><div><span class=\"desc-key\">hfnoise</span>（高频噪声）：以 50 Hz 为界计算高频相对低频的噪声指数，再做中位数 + MAD 稳健 z，z &gt; 5。计入坏道，同时记为大伪迹导联。</div></li></ul><div class=\"desc-note\"><span class=\"desc-key\">坏道与大伪迹导联</span>：<ul class=\"desc-sub\"><li>坏道 B_five = flat ∨ bridge ∨ hfnoise ∨ (contact ∧ ¬豁免) ∨ (correlation ∧ 同时命中其它规则)。correlation 单独命中只记预警。</li><li>大伪迹导联 A_art = contact ∨ hfnoise。前额 Fp1 / Fp2 / Fpz / AF3 / AF4 仅被 contact 命中时不进坏道，但仍记为大伪迹导联，交节点 P 的 ICA 处理。F7 / F8 不豁免。</li><li>有阻抗：B_total = B_five ∪ B_imp。无阻抗：B_total = B_five。</li></ul></div><div class=\"desc-note\">实现见 <code>eeg_repair.algorithms.mark_bad_channels</code>；五条规则的阈值是该模块常量，不随 YAML 变动。坏道率 = 坏道数 / 头皮导联数，&lt; 0.30 只记内部 passed，不决定发布。联合阻抗后，坏道比例 &gt; 0.60 或好道少于 4 个时，在 ICA 之前停止，不写修复文件。已发布记录：bad_rate ≤0.40 为 excellent，0.40–0.60 为 good，写入 meta/info.json 的 eeg_repair。</div>",
       "inputs": "X_filt [C, T], B_imp [C]（无阻抗时为空）",
       "outputs": "B_total [C] (坏道), A_art [C] (大伪迹导联), bad_rate",
       "thresholds": "flat std<0.2µV · contact z>3.5 · bridge ED<16µV² · corr<0.4 占比>20% · hfnoise z>5",
@@ -769,15 +769,15 @@ button.is-selected {
     "id": "P",
     "label": "ICA 去伪迹\n剔除肌电与眼电成分",
     "type": "process",
-    "stage": "阶段 3 · 动静态坏道与伪迹检测",
+    "stage": "阶段 4 · 坏道检测与发布门控",
     "x": 240,
     "y": 645,
     "w": 250,
     "h": 56,
     "details": {
-      "desc": "<div class=\"desc-lead\">用 Infomax ICA 剔除肌电与眼电成分。已判坏通道设为 bads，<span class=\"desc-key\">不参与拟合</span>，避免坏道污染解混矩阵。平均参考放到坏道插值之后。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">拟合 ICA</span>：方法 Infomax，在独立 1–100 Hz 副本上拟合，权重套回 0.5–100 Hz 数据；成分数默认 32 且不超过好道数；有效时长不足 5 s 则跳过本步。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">识别肌电 IC</span>：对每个成分做 Welch PSD，取 r = P(30–100 Hz) / P(1–30 Hz)，再对 r 做 MAD-z：<ul class=\"desc-sub\"><li>z &gt; 3.0 判为显著肌电成分</li><li>按源能量从高到低剔除，数量不超过好道数的 20%</li></ul></div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">识别眼电 IC</span>：仅用前额极 FP1 / FP2 / FPZ 作 proxy 跑 find_bads_eog（阈值 3.0），按相关强度最多保留 2 个。</div></li><li><span class=\"desc-step\">4</span><div><span class=\"desc-key\">写回</span>：剔除集合 = 肌电 IC ∪ 眼电 IC，从数据中减去这些成分；辅助导联原样保留。</div></li></ul><div class=\"desc-note\"><span class=\"desc-key\">肌电干扰预警</span>（仅记录，不改变门控通过与否）：<ul class=\"desc-sub\"><li>显著肌电 IC 占比 ∈ [80%, 90%) → 肌电干扰预警</li><li>占比 ≥ 90% → 肌电严重干扰预警</li></ul></div><div class=\"desc-note\"><span class=\"desc-key\">容错与规则次序</span>：ICA 失败或数据过短时跳过本步并记录原因，继续走球面插值与重参考。节点 M2 的 hfnoise 会先把强肌电通道判为坏道，这些通道交给节点 I 做球面插值；ICA 处理的是<span class=\"desc-key\">跨通道扩散的中低强度</span>伪迹。</div><div class=\"desc-note\">实现见 <code>eeg_repair.algorithms.fit_ica</code> / <code>apply_ica</code>，由 <code>ica_enabled</code> 与 <code>ica_components</code> 控制。</div>",
+      "desc": "<div class=\"desc-lead\">用 Infomax ICA 剔除肌电与眼电成分。已判坏通道设为 bads，<span class=\"desc-key\">不参与拟合</span>，避免坏道污染解混矩阵。平均参考放到坏道插值之后。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">拟合 ICA</span>：方法 Infomax，在独立 1–100 Hz 副本上拟合，权重套回 0.5–100 Hz 数据；成分数默认 32 且不超过好道数；有效时长不足 5 s 则跳过本步。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">识别肌电 IC</span>：对每个成分做 Welch PSD，取 r = P(30–100 Hz) / P(1–30 Hz)，再对 r 做 MAD-z：<ul class=\"desc-sub\"><li>z &gt; 3.0 判为显著肌电成分</li><li>按源能量从高到低剔除，数量不超过好道数的 20%</li></ul></div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">识别眼电 IC</span>：仅用前额极 FP1 / FP2 / FPZ 作 proxy 跑 find_bads_eog（阈值 3.0），按相关强度最多保留 2 个。</div></li><li><span class=\"desc-step\">4</span><div><span class=\"desc-key\">写回</span>：剔除集合 = 肌电 IC ∪ 眼电 IC，从数据中减去这些成分；辅助导联原样保留。</div></li></ul><div class=\"desc-note\"><span class=\"desc-key\">肌电干扰预警</span>（只在内存中计算，不写文件，也不改变是否继续）：<ul class=\"desc-sub\"><li>显著肌电 IC 占比 ∈ [80%, 90%) → 肌电干扰预警</li><li>占比 ≥ 90% → 肌电严重干扰预警</li></ul></div><div class=\"desc-note\"><span class=\"desc-key\">容错与规则次序</span>：ICA 失败或数据过短时跳过本步并记录原因，继续走球面插值与重参考。节点 M2 的 hfnoise 会先把强肌电通道判为坏道，这些通道交给节点 I 做球面插值；ICA 处理的是<span class=\"desc-key\">跨通道扩散的中低强度</span>伪迹。</div><div class=\"desc-note\">实现见 <code>eeg_repair.algorithms.fit_ica</code> / <code>apply_ica</code>，由 <code>ica_enabled</code> 与 <code>ica_components</code> 控制。</div>",
       "inputs": "X_filt [C, T], B_total [C]",
-      "outputs": "X_clean [C, T] (已去伪迹), ICA 审计 (excluded / 预警)",
+      "outputs": "X_clean [C, T]；肌电预警只在内存中计算，不写文件",
       "thresholds": "肌电 MAD-z > 3.0 且 ≤ 好道数 20% · 眼电阈值 3.0 且 ≤ 2 个 · 拟合 ≥ 5 s",
       "formula": "X_clean = ICA⁻¹( ICA(X_filt) \\ (IC_muscle ∪ IC_eog) )"
     }
@@ -786,30 +786,30 @@ button.is-selected {
     "id": "I",
     "label": "坏道球面样条插值\n再做全头皮平均重参考",
     "type": "process",
-    "stage": "阶段 4 · 坏道球面插值",
+    "stage": "阶段 5 · 插值与平均参考",
     "x": 240,
     "y": 730,
     "w": 270,
     "h": 56,
     "details": {
-      "desc": "<div class=\"desc-lead\">坏通道统一由球面样条插值修复。每个采样点只使用同一时刻的好通道，按电极三维坐标估计坏道波形，保持原始通道数、通道顺序和采样率。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">坏道集合</span>：B_total；好道集合 G 为其余有效头皮导联。无坏道时跳过插值，仍执行后续平均重参考。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">球面样条</span>：用 montage 上的三维坐标，由好通道插值坏道。实现为 MNE <code>interpolate_bads</code>。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">平均重参考</span>：插值后的全体头皮导联做平均参考，插值结果进入参考。</div></li></ul><div class=\"desc-note\">仅填补原有坏通道，不新增虚拟电极或扩展目标通道。辅助导联不参与插值和头皮平均参考。前额仅因 contact 被豁免的通道不在 B_total 里，不做插值，由上一步 ICA 处理眼电，再统一重参考。</div>",
+      "desc": "<div class=\"desc-lead\">只对有坐标的坏道做球面样条。没有坐标的坏道保持滤波和 ICA 之后的值。随后对全部头皮通道做平均参考。</div><ul class=\"desc-list\"><li><span class=\"desc-step\">1</span><div><span class=\"desc-key\">可插值坏道</span>：B_total 中有限坐标的通道。无坏道，或没有可用的有坐标好道时，跳过插值。</div></li><li><span class=\"desc-step\">2</span><div><span class=\"desc-key\">球面样条</span>：用 montage 上的三维坐标，由有坐标的好通道插值。实现为 MNE <code>interpolate_bads</code>。</div></li><li><span class=\"desc-step\">3</span><div><span class=\"desc-key\">平均重参考</span>：插值后的全体头皮导联做平均参考。</div></li></ul><div class=\"desc-note\">不新增虚拟电极。辅助导联不参与插值和平均参考。前额仅因 contact 被豁免的通道不在 B_total 里，不做插值。</div>",
       "inputs": "X_clean [C, T], B_total [C], montage",
       "outputs": "X_ref [C, T]",
-      "thresholds": "坏道 = B_total；插值需有效三维电极坐标及可用好通道",
-      "formula": "X_filled[B_total, :] = SphericalSpline(X_clean[G, :], pos_G, pos_bad); X_filled[G, :] = X_clean[G, :]; X_ref = X_filled − mean_EEG(X_filled)"
+      "thresholds": "只插值有坐标的坏道；至少有一个有坐标的好道",
+      "formula": "X_filled[B_located, :] = SphericalSpline(X_clean[G_located, :]); 无坐标坏道保持原值; X_ref = X_filled − mean_EEG(X_filled)"
     }
   },
   {
     "id": "Q",
     "label": "输出一致性与修复质量检查\n波形有效 · 源表结构一致",
     "type": "decision",
-    "stage": "阶段 5 · 质量检查",
+    "stage": "阶段 6 · 写出前检查",
     "x": 240,
     "y": 825,
     "w": 245,
     "h": 60,
     "details": {
-      "desc": "<div class=\"desc-lead\">检查插值后的信号及待写出表，合格后另存修复结果。</div><ul class=\"desc-list\"><li>检查信号是否含 NaN / Inf，以及通道数、坏道比例和插值结果是否可发布。</li><li>确认通道数、顺序、采样率、采样点数与源数据一致。</li><li>确认时间戳、非脑电字段、行顺序、schema 与源表一致；单位已恢复。</li><li>插值失败或输出值溢出源浮点类型时，记录原因并隔离，保留原浮点存储精度及其舍入，不改写源格式。</li></ul>",
+      "desc": "<div class=\"desc-lead\">坏道比例已在 ICA 之前判定。这里只检查待写出的表是否可发布。</div><ul class=\"desc-list\"><li>信号必须有限，不能含 NaN / Inf。</li><li>通道数、顺序、采样率、采样点数与源数据一致。</li><li>时间戳、非脑电字段、行顺序、schema 与源表一致；单位恢复为源文件单位。</li><li>输出值溢出源浮点类型，或回读与写出不一致时隔离，不改写源格式。</li></ul>",
       "inputs": "X_ref [C, T], source_table, source_schema",
       "outputs": "Bool (Pass / Reject)",
       "thresholds": "信号有效；结构一致；原始时间轴与非脑电数据保持不变",
@@ -820,15 +820,15 @@ button.is-selected {
     "id": "O",
     "label": "另存修复后的 Parquet\n存储格式与源文件一致",
     "type": "io",
-    "stage": "阶段 6 · 另存输出",
+    "stage": "阶段 7 · 另存输出",
     "x": 240,
     "y": 915,
     "w": 265,
     "h": 52,
     "details": {
-      "desc": "<div class=\"desc-lead\">参照源 Parquet 的存储格式，输出独立的修复文件，绝不覆盖源文件。</div><ul class=\"desc-list\"><li>在源表副本中仅替换脑电信号值；保留列名、列顺序、数据类型、嵌套结构、元数据及原始单位。</li><li>保持行数、行顺序、时间戳、通道顺序及所有非脑电字段不变；保持压缩 codec 和行组大小；不承诺页布局及编码逐字节相同。</li><li>例如源文件 observation.eeg.parquet，另存为 observation.eeg_repair.parquet；目标已存在时拒绝覆盖，改用新输出目录重试。</li><li>写出后重新读取，核对 schema、行数与非脑电字段。不另存坏道、ICA 或参数记录。</li></ul>",
+      "desc": "<div class=\"desc-lead\">参照源 Parquet 的存储格式，输出独立的修复文件，绝不覆盖源文件。</div><ul class=\"desc-list\"><li>在源表副本中仅替换脑电信号值；保留列名、列顺序、数据类型、嵌套结构、元数据及原始单位。</li><li>保持行数、行顺序、时间戳、通道顺序及所有非脑电字段不变；保持压缩 codec 和行组大小；不承诺页布局及编码逐字节相同。</li><li>源文件 observation.eeg.parquet 旁新增 observation.eeg_repair.parquet。目标已存在时拒绝覆盖，不自动换目录重试。</li><li>数据集模式同时更新该数据集的 meta/info.json，增加 observation.eeg_repair 特征。不修改 episodes_stats.jsonl。</li><li>写出后重新读取，核对 schema 与数值。不另存坏道、ICA 或参数记录。失败时删除本次新增文件并恢复 info.json。</li></ul>",
       "inputs": "X_ref, source_table, source_schema, metadata",
-      "outputs": "独立的修复后 Parquet",
+      "outputs": "observation.eeg_repair.parquet；数据集另更新 meta/info.json",
       "thresholds": "输出路径 ≠ 源路径；存储结构与源文件一致",
       "formula": "WriteParquet(new_path, ReplaceEEG(copy(source_table), X_ref), schema=source_schema)"
     }
@@ -854,15 +854,15 @@ button.is-selected {
     "id": "E",
     "label": "结束",
     "type": "terminal",
-    "stage": "阶段 6 · 流程终止",
+    "stage": "阶段 7 · 流程终止",
     "x": 240,
     "y": 995,
     "w": 130,
     "h": 38,
     "details": {
-      "desc": "<div class=\"desc-lead\">清理临时副本，返回处理状态。源文件始终保留；成功时返回修复后 Parquet 路径。</div>",
+      "desc": "<div class=\"desc-lead\">删除临时目录。源文件始终保留。成功时修复文件留在源目录旁；失败时该数据集回滚。</div>",
       "inputs": "处理状态、输出路径",
-      "outputs": "SUCCESS / QUARANTINED",
+      "outputs": "成功 / 失败",
       "thresholds": "无",
       "formula": "Return(status, output_path)"
     }
@@ -889,13 +889,8 @@ button.is-selected {
   },
   {
     "from": "B",
-    "to": "F",
-    "label": "是",
-    "path": "all main"
-  },
-  {
-    "from": "F",
     "to": "C",
+    "label": "是",
     "path": "all main"
   },
   {
@@ -912,17 +907,30 @@ button.is-selected {
   },
   {
     "from": "D",
-    "to": "M2",
+    "to": "F",
     "path": "all main"
   },
   {
     "from": "M",
+    "to": "F",
+    "path": "all main"
+  },
+  {
+    "from": "F",
     "to": "M2",
     "path": "all main"
   },
   {
     "from": "M2",
+    "to": "R",
+    "label": "超限",
+    "path": "all circuit",
+    "type": "circuit"
+  },
+  {
+    "from": "M2",
     "to": "P",
+    "label": "通过",
     "path": "all main"
   },
   {
@@ -961,7 +969,7 @@ button.is-selected {
   }
 ];
 
-    const TOPO_ORDER = ["S","A","B","F","C","D","M","M2","P","I","Q","O","R","E"];
+    const TOPO_ORDER = ["S","A","B","C","D","M","F","M2","P","I","Q","O","R","E"];
 
     let activePathFilter = 'all';
     let activeNodeId = 'A';
@@ -1011,7 +1019,7 @@ button.is-selected {
           const x2 = target.x - target.w / 2;
           pathD = `M ${x1} ${y1} L ${x2} ${y1}`;
           midX = (x1 + x2) / 2; midY = y1;
-        } else if (edge.from === 'Q' && edge.to === 'R') {
+        } else if ((edge.from === 'Q' || edge.from === 'M2') && edge.to === 'R') {
           const x1 = source.x + source.w / 2;
           const y1 = source.y;
           const x2 = target.x - target.w / 2;
@@ -1036,12 +1044,12 @@ button.is-selected {
           const turnY = (y1 + y2) / 2;
           pathD = `M ${x1} ${y1} L ${x1} ${turnY} L ${x2} ${turnY} L ${x2} ${y2}`;
           midX = (x1 + x2) / 2; midY = turnY;
-        } else if (edge.from === 'D' && edge.to === 'M2') {
+        } else if (edge.from === 'D' && edge.to === 'F') {
           const x1 = source.x; const y1 = source.y + source.h / 2;
           const x2 = target.x - 45; const y2 = target.y - target.h / 2;
           const turnY = (y1 + y2) / 2;
           pathD = `M ${x1} ${y1} L ${x1} ${turnY} L ${x2} ${turnY} L ${x2} ${y2}`;
-        } else if (edge.from === 'M' && edge.to === 'M2') {
+        } else if (edge.from === 'M' && edge.to === 'F') {
           const x1 = source.x; const y1 = source.y + source.h / 2;
           const x2 = target.x + 45; const y2 = target.y - target.h / 2;
           const turnY = (y1 + y2) / 2;

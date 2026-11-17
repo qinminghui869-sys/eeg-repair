@@ -12,6 +12,6 @@ montage_csv: null         # 实测坐标 CSV：name,x_m_mne,y_m_mne,z_m_mne（�
 ica_enabled: true
 ica_components: 32
 min_duration_s: 10.0
-max_bad_ratio: 0.4
+max_bad_ratio: 0.6
 impedance_threshold_kohm: 150.0
 impedance_unit: ohm       # 阻抗文件为各通道独立数值列；取任一快照达到阈值

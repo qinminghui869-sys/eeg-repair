@@ -75,8 +75,17 @@ def repair_dataset(root, paths, config=None, *, dry_run=False, impedance=None):
         staged = []
         for path, cfg, index, relative, final in zip(paths, configs, episodes, relatives, finals):
             target = stage / relative
-            repair_file(path, target, cfg, impedance=impedance)
-            records.append({"episode_index": index, "data": relative.as_posix()})
+            audit = repair_file(path, target, cfg, impedance=impedance)
+            records.append(
+                {
+                    "episode_index": index,
+                    "data": relative.as_posix(),
+                    "quality": audit["quality"],
+                    "bad_rate": audit["bad_rate"],
+                    "n_bad": audit["n_bad"],
+                    "n_scalp": audit["n_scalp"],
+                }
+            )
             staged.append((target, final))
         for source, final in staged:
             final.parent.mkdir(parents=True, exist_ok=True)
@@ -89,12 +98,14 @@ def repair_dataset(root, paths, config=None, *, dry_run=False, impedance=None):
         repaired_feature = json.loads(json.dumps(source_feature))
         repaired_feature["unit"] = configs[0].unit
         info["features"][REPAIR_FEATURE] = repaired_feature
+        qualities = [record["quality"] for record in records]
         info["eeg_repair"] = {
             "version": 1,
             "status": "complete",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "feature": REPAIR_FEATURE,
             "source_feature": "observation.eeg",
+            "quality": "good" if "good" in qualities else "excellent",
             "records": records,
         }
         write_json(info_path, info)
