@@ -10,7 +10,7 @@ import tempfile
 import pyarrow.parquet as pq
 
 from .config import load_config
-from .pipeline import repair_file
+from .pipeline import filter_file, repair_file
 
 
 def dataset_root(path):
@@ -31,10 +31,16 @@ def write_json(path, value):
 
 REPAIR_NAME = "observation.eeg_repair.parquet"
 REPAIR_FEATURE = "observation.eeg_repair"
+DENOISE_NAME = "observation.eeg_denoise.parquet"
+DENOISE_FEATURE = "observation.eeg_denoise"
 
 
 def repaired_relative(source_relative: Path) -> Path:
     return source_relative.with_name(REPAIR_NAME)
+
+
+def denoise_relative(source_relative: Path) -> Path:
+    return source_relative.with_name(DENOISE_NAME)
 
 
 def episode_index(path: Path) -> int:
@@ -108,6 +114,62 @@ def repair_dataset(root, paths, config=None, *, dry_run=False, impedance=None):
             "quality": "good" if "good" in qualities else "excellent",
             "records": records,
         }
+        write_json(info_path, info)
+    except BaseException:
+        for path in reversed(published):
+            path.unlink(missing_ok=True)
+        if info_path.exists():
+            info_path.write_bytes(info_backup)
+        raise
+    finally:
+        if stage.exists():
+            shutil.rmtree(stage)
+    return {"status": "SUCCESS", "files": len(paths)}
+
+
+def filter_dataset(root, paths, config=None, *, dry_run=False):
+    """Write observation.eeg_denoise.parquet next to each source file. Never overwrite observation.eeg.parquet."""
+    root = Path(root).resolve()
+    paths = [Path(p).resolve() for p in paths]
+    all_paths = sorted(p for p in root.rglob("observation.eeg.parquet") if ".eeg-dataset-" not in p.parts)
+    if sorted(paths) != all_paths:
+        raise ValueError("dataset mode requires all EEG episodes; pass the dataset root")
+    configs = [load_config(config, source=p) for p in paths]
+    episodes = [episode_index(path) for path in paths]
+    if len(set(episodes)) != len(episodes):
+        raise ValueError("require unique episode_index per EEG file")
+    relatives = [denoise_relative(path.relative_to(root)) for path in paths]
+    finals = [root / relative for relative in relatives]
+    for final in finals:
+        if final.exists():
+            raise FileExistsError(f"denoise output already exists: {final}")
+    if (root / "meta/stats.json").exists():
+        raise ValueError("legacy meta/stats.json is unsupported; refusing stale global EEG statistics")
+    for path, cfg, final in zip(paths, configs, finals):
+        filter_file(path, final, cfg, dry_run=True)
+    if dry_run:
+        return {"status": "VALIDATED", "files": len(paths)}
+    stage = Path(tempfile.mkdtemp(prefix=".eeg-dataset-", dir=root))
+    published = []
+    info_path = root / "meta/info.json"
+    info_backup = info_path.read_bytes()
+    try:
+        staged = []
+        for path, cfg, relative, final in zip(paths, configs, relatives, finals):
+            target = stage / relative
+            filter_file(path, target, cfg)
+            staged.append((target, final))
+        for source, final in staged:
+            final.parent.mkdir(parents=True, exist_ok=True)
+            os.link(source, final)
+            published.append(final)
+        info = json.loads(info_backup)
+        source_feature = info["features"]["observation.eeg"]
+        if DENOISE_FEATURE in info["features"]:
+            raise ValueError("observation.eeg_denoise already present in meta/info.json")
+        denoised_feature = json.loads(json.dumps(source_feature))
+        denoised_feature["unit"] = configs[0].unit
+        info["features"][DENOISE_FEATURE] = denoised_feature
         write_json(info_path, info)
     except BaseException:
         for path in reversed(published):

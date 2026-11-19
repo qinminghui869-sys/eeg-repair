@@ -15,6 +15,7 @@ dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
 
 [project.scripts]
 eeg-repair = "eeg_repair.cli:main"
+eeg-filter = "eeg_repair.cli:filter_main"
 eeg-repair-inspect = "eeg_repair.inspection:main"
 eeg-repair-qc = "eeg_repair.quality:main"
 

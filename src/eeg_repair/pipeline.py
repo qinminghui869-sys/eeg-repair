@@ -77,6 +77,46 @@ def impedance_bads(path: Path | None, names: list[str], cfg: Config) -> list[str
     return bad
 
 
+def filter_file(
+    source: str | Path,
+    destination: str | Path,
+    cfg: Config,
+    *,
+    dry_run: bool = False,
+) -> dict:
+    """Bandpass and notch scalp channels. Do not remove DC or run repair steps."""
+    record = read_recording(source, cfg)
+    destination = Path(destination)
+    scalp, names = alg.scalp_names(list(cfg.channels))
+    if not names:
+        raise ValueError("no scalp channels to filter")
+    if destination.resolve() == record.path or destination.exists():
+        raise ValueError("destination must be new and distinct from source")
+    if dry_run:
+        return {
+            "status": "VALIDATED",
+            "source": str(record.path),
+            "scalp_channels": len(names),
+            "samples": record.table.num_rows,
+        }
+    clean = alg.bandpass_notch(
+        record.data_uv[scalp],
+        names,
+        cfg.sfreq,
+        l_freq=cfg.highpass_hz,
+        h_freq=cfg.lowpass_hz,
+        notch_hz=cfg.notch_hz,
+    )
+    table = replace_signals(record, clean, cfg, scalp)
+    publish(record, table, destination)
+    return {
+        "status": "SUCCESS",
+        "source": str(record.path),
+        "scalp_channels": len(names),
+        "samples": record.table.num_rows,
+    }
+
+
 def repair_file(
     source: str | Path,
     destination: str | Path,

@@ -4,32 +4,119 @@ CPU 上的 EEG Parquet 修复工具。对头皮导联做预处理后另存结构
 
 处理顺序：**阻抗检查 → 滤波 → 坏道检测 → ICA 去伪迹 → 坏道插值 → 平均参考**。阻抗在滤波前读取，判定不使用滤波后的波形。
 
-| 步骤 | 参数 | 默认值 |
-| --- | --- | --- |
-| 阻抗检查 | 输入 | 同目录 `observation.eeg_impedance.parquet`；没有该文件则跳过 |
-| 阻抗检查 | 坏道阈值 | 任一快照 ≥ 150 kΩ |
-| 阻抗检查 | 文件单位 | `ohm`，先换算为 kΩ 再比较 |
-| 滤波 | 去直流 | 每个头皮通道减去自身时间中位数 |
-| 滤波 | 带通 | 0.5–100 Hz；FIR，零相位，Hamming 窗，firwin |
-| 滤波 | 低通上限 | 100 Hz 与 Nyquist−1 Hz 中的较小值 |
-| 滤波 | 陷波 | 50 Hz；FIR，零相位 |
-| 滤波 | 滤波长度、过渡带 | 使用 MNE 自动值 |
-| 坏道检测 | flat | 标准差 < 0.2 µV，且相邻差分 < 0.02 µV 的占比 > 0.7 |
-| 坏道检测 | contact | 稳健 z > 3.5，或 z > 3.0 且标准差 > 25 µV；仅 FP1、FP2、FPZ、AF3、AF4 单独命中时豁免 |
-| 坏道检测 | bridge | 记录短于 10 秒则跳过；2 秒分段，最近 4 个近邻的电学距离过小 |
-| 坏道检测 | correlation | 1 秒窗口内最大绝对相关 < 0.4 的占比 > 20%；仅此项命中时不记坏道 |
-| 坏道检测 | hfnoise | 50 Hz 分界的四阶 Butterworth 高低频比，稳健 z > 5；只用于判定，不写入结果 |
-| 坏道检测 | 发布条件 | 坏道比例 > 0.60，或好道少于 4 个时，该记录不发布 |
-| 坏道检测 | 质量等级 | 已发布记录：≤0.40 为 `excellent`，0.40–0.60 为 `good` |
-| ICA 去伪迹 | 拟合数据 | 另做 1–100 Hz 副本，不串联到输出支路 |
-| ICA 去伪迹 | 算法 | Infomax，最多 32 个成分，随机种子 97，最多 500 次迭代 |
-| ICA 去伪迹 | 最短时长 | 短于 5 秒或拟合失败时跳过，继续后续步骤 |
-| ICA 去伪迹 | 肌电 | 30–100 Hz 与 1–30 Hz 能量比的稳健 z > 3，剔除数量不超过好道数的 20% |
-| ICA 去伪迹 | 眼电 | 用 FP1、FP2、FPZ 作代理，最多剔除 2 个成分 |
-| 坏道插值 | 方法 | 球面样条，只重建有坐标的坏道 |
-| 坏道插值 | 无坐标通道 | 保持滤波和 ICA 后的原值 |
-| 平均参考 | 范围 | 插值后的全部头皮通道 |
-| 平均参考 | 不参与的通道 | IO、TRIG、TRIGGER、VEOG、HEOG、EKG、EMG，原值保留 |
+<table>
+  <thead>
+    <tr>
+      <th>步骤</th>
+      <th>参数</th>
+      <th>默认值</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="3">阻抗检查</td>
+      <td>输入</td>
+      <td>同目录 <code>observation.eeg_impedance.parquet</code>；没有该文件则跳过</td>
+    </tr>
+    <tr>
+      <td>坏道阈值</td>
+      <td>任一快照 ≥ 150 kΩ</td>
+    </tr>
+    <tr>
+      <td>文件单位</td>
+      <td><code>ohm</code>，先换算为 kΩ 再比较</td>
+    </tr>
+    <tr>
+      <td rowspan="5">滤波</td>
+      <td>去直流</td>
+      <td>每个头皮通道减去自身时间中位数</td>
+    </tr>
+    <tr>
+      <td>带通</td>
+      <td>0.5–100 Hz；FIR，零相位，Hamming 窗，firwin</td>
+    </tr>
+    <tr>
+      <td>低通上限</td>
+      <td>100 Hz 与 Nyquist−1 Hz 中的较小值</td>
+    </tr>
+    <tr>
+      <td>陷波</td>
+      <td>50 Hz；FIR，零相位</td>
+    </tr>
+    <tr>
+      <td>滤波长度、过渡带</td>
+      <td>使用 MNE 自动值</td>
+    </tr>
+    <tr>
+      <td rowspan="7">坏道检测</td>
+      <td>flat</td>
+      <td>标准差 &lt; 0.2 µV，且相邻差分 &lt; 0.02 µV 的占比 &gt; 0.7</td>
+    </tr>
+    <tr>
+      <td>contact</td>
+      <td>稳健 z &gt; 3.5，或 z &gt; 3.0 且标准差 &gt; 25 µV；仅 FP1、FP2、FPZ、AF3、AF4 单独命中时豁免</td>
+    </tr>
+    <tr>
+      <td>bridge</td>
+      <td>记录短于 10 秒则跳过；2 秒分段，最近 4 个近邻的电学距离过小</td>
+    </tr>
+    <tr>
+      <td>correlation</td>
+      <td>1 秒窗口内最大绝对相关 &lt; 0.4 的占比 &gt; 20%；仅此项命中时不记坏道</td>
+    </tr>
+    <tr>
+      <td>hfnoise</td>
+      <td>50 Hz 分界的四阶 Butterworth 高低频比，稳健 z &gt; 5；只用于判定，不写入结果</td>
+    </tr>
+    <tr>
+      <td>发布条件</td>
+      <td>坏道比例 &gt; 0.60，或好道少于 4 个时，该记录不发布</td>
+    </tr>
+    <tr>
+      <td>质量等级</td>
+      <td>已发布记录：≤0.40 为 <code>excellent</code>，0.40–0.60 为 <code>good</code></td>
+    </tr>
+    <tr>
+      <td rowspan="5">ICA 去伪迹</td>
+      <td>拟合数据</td>
+      <td>另做 1–100 Hz 副本，不串联到输出支路</td>
+    </tr>
+    <tr>
+      <td>算法</td>
+      <td>Infomax，最多 32 个成分，随机种子 97，最多 500 次迭代</td>
+    </tr>
+    <tr>
+      <td>最短时长</td>
+      <td>短于 5 秒或拟合失败时跳过，继续后续步骤</td>
+    </tr>
+    <tr>
+      <td>肌电</td>
+      <td>30–100 Hz 与 1–30 Hz 能量比的稳健 z &gt; 3，剔除数量不超过好道数的 20%</td>
+    </tr>
+    <tr>
+      <td>眼电</td>
+      <td>用 FP1、FP2、FPZ 作代理，最多剔除 2 个成分</td>
+    </tr>
+    <tr>
+      <td rowspan="2">坏道插值</td>
+      <td>方法</td>
+      <td>球面样条，只重建有坐标的坏道</td>
+    </tr>
+    <tr>
+      <td>无坐标通道</td>
+      <td>保持滤波和 ICA 后的原值</td>
+    </tr>
+    <tr>
+      <td rowspan="2">平均参考</td>
+      <td>范围</td>
+      <td>插值后的全部头皮通道</td>
+    </tr>
+    <tr>
+      <td>不参与的通道</td>
+      <td>IO、TRIG、TRIGGER、VEOG、HEOG、EKG、EMG，原值保留</td>
+    </tr>
+  </tbody>
+</table>
 
 ## 环境
 
@@ -63,9 +150,17 @@ scripts/repair.sh <file.parquet> --config configs/eeg_repair.yaml --output-dir o
 
 数据集模式把 `observation.eeg_repair.parquet` 写回源数据目录。此时 `--output-dir` 只接收日志。原始 `observation.eeg.parquet` 不覆盖。退出码：`0` 全部成功，`1` 处理或质检失败，`2` 输入或配置错误。预检失败时不继续修复。
 
+`scripts/filter.sh` 只对头皮通道做带通和陷波。它不减去时间中位数，不写质量等级。输入范围与 `scripts/repair.sh` 相同，参数为 `--config`、`--output-dir`、`--pattern`。结果文件名是 `observation.eeg_denoise.parquet`。数据集模式把它写回源目录，并在 `meta/info.json` 增加 `features.observation.eeg_denoise`；此时 `--output-dir` 只接收日志。独立 Parquet 写到 `--output-dir` 下的对应相对目录。源文件不覆盖。
+
+```bash
+scripts/filter.sh <input>
+scripts/filter.sh <input> --config configs/eeg_repair.yaml --output-dir outputs/filter1
+```
+
 | 命令 | 作用 |
 | --- | --- |
 | `eeg-repair` | 修复并写出结果 |
+| `eeg-filter` | 只做带通和陷波并写出结果 |
 | `eeg-repair-inspect` | 只读检查输入，并可生成配置模板 |
 | `eeg-repair-qc` | 检查空值、缺帧与时间戳，把 JSON 打到标准输出 |
 
@@ -118,6 +213,7 @@ eeg-repair-qc <dataset-dir>
 src/eeg_repair/                  命令、管线、算法、Parquet 与数据集契约
 configs/                         设备配置与暂定坐标
 scripts/repair.sh                预检、修复、质检
+scripts/filter.sh                预检、带通和陷波、质检
 scripts/backfill_eeg_quality.py  为已发布数据集回填质量等级
 docs/                            算法边界、来源、验证与流程图
 tests/                           数值、契约与异常路径
