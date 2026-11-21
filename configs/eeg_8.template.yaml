@@ -1,9 +1,0 @@
-# 8 通道接入模板。填入真实通道名、顺序、采样率和单位后再运行。
-channels: []
-sfreq: null
-unit: null
-layout: columns
-montage: standard_1020
-montage_csv: null
-ica_enabled: true
-ica_components: 8

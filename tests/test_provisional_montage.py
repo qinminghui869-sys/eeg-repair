@@ -34,15 +34,14 @@ def load_config_from_values(device):
     )
 
 
-@pytest.mark.parametrize("device", ["neuroscan_128.yaml", "brainco_31.yaml"])
-def test_full_device_coverage_and_evidence(device):
-    cfg = config_for_device(device)
+def test_full_device_coverage_and_evidence():
+    cfg = config_for_device("neuroscan_128.yaml")
     _, names = alg.scalp_names(list(cfg.channels))
     montage = prepare_montage(names, cfg)
     assert montage.get_positions()["coord_frame"] == "head"
     evidence = montage_evidence(cfg)
     assert evidence["registration"]["status"] == "provisional_unvalidated_128"
-    assert len(names) == (128 if device.startswith("neuroscan") else 31)
+    assert len(names) == 128
     pos = alg._montage_pos(montage)
     assert pos["F11"][0] < 0 < pos["F12"][0]
     assert all(np.linalg.norm(pos[n.upper()]) < 0.25 for n in names)

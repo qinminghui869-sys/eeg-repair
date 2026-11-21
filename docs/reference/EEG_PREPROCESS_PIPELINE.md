@@ -1,5 +1,7 @@
 # BrainCo EEG 预处理步骤与算法
 
+存档，不是本仓库的执行入口。当前行为以 [README](../../README.md) 参数表和 [实现边界](../ALGORITHM.md) 为准。下文保留迁入前按 trial / session 处理的流程。
+
 设备设定：250 Hz，约 31 头皮导联（排除 IO / TRIG），montage 为 standard 10–20。
 
 整体顺序：

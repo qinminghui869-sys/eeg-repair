@@ -10,6 +10,9 @@
 
 ## Unreleased
 
+- 删除 `configs/brainco_31.yaml`、`configs/eeg_8.template.yaml` 和 `configs/eeg_repair.yaml`。带元数据的记录从 `info.json` 读取通道名、采样率和单位。暂定坐标只覆盖 `configs/neuroscan_128.yaml` 的 128 个头皮通道。
+- 增加 BrainCo 列名订正和修复重跑脚本。订正只改列名、不重排数据，并覆盖原 Parquet。
+- 说明收成操作说明、实现边界、坐标来源和验证范围，同一事实不再多处重复。
 - 数据集模式把 `observation.eeg_repair.parquet` 写回源目录，并在 `meta/info.json` 登记特征与单位。源 Parquet 不覆盖。失败时回滚该数据集本次新增文件。
 - 已发布记录写入 `eeg_repair.quality`，以及每条记录的 `quality`、`bad_rate`、`n_bad`、`n_scalp`。坏道比例大于 0.60 或好道少于 4 个则不发布；不超过 0.40 为 `excellent`，其余已发布记录为 `good`。
 - 增加 `scripts/repair.sh` 与 `scripts/backfill_eeg_quality.py`。回填只改 `info.json`，不重写 Parquet。

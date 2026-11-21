@@ -1,8 +1,47 @@
 # EEG Repair
 
-CPU 上的 EEG Parquet 修复工具。对头皮导联做预处理后另存结构相同的 Parquet，源文件不覆盖。不下载模型，不改变采样率与通道数。
+在 CPU 上预处理 EEG Parquet，另存结构相同的结果。不覆盖源文件，不改变采样率、通道数和采样时刻，不下载模型。
 
-处理顺序：**阻抗检查 → 滤波 → 坏道检测 → ICA 去伪迹 → 坏道插值 → 平均参考**。阻抗在滤波前读取，判定不使用滤波后的波形。
+| 入口 | 处理 | 结果 |
+| --- | --- | --- |
+| `scripts/repair.sh` | 阻抗、去直流、带通、陷波、坏道、ICA、球面插值、平均参考 | `observation.eeg_repair.parquet`，并写质量等级 |
+| `scripts/filter.sh` | 只对头皮通道做带通和陷波 | `observation.eeg_denoise.parquet`，不写质量等级 |
+
+`filter.sh` 不减时间中位数，也不做坏道、ICA、插值和重参考。参数见下方修复表中的带通与陷波两行。
+
+## 安装
+
+Python 3.11 或 3.12。
+
+```bash
+uv sync --locked --extra dev --python 3.11
+source .venv/bin/activate
+```
+
+不用 uv 时执行 `python -m pip install -e '.[dev]'`。该方式不读锁文件，版本可能与 CI 不一致。
+
+## 运行
+
+`<input>` 可以是单个 Parquet、含 `meta/info.json` 的数据集目录，或一批数据集的上级目录。
+
+```bash
+scripts/repair.sh <input>
+scripts/repair.sh <input> --config configs/provisional.yaml
+scripts/filter.sh <input>
+```
+
+| 参数 | 作用 |
+| --- | --- |
+| `--config FILE` | 补缺失元数据，或指定滤波参数与电极坐标。有 `info.json` 时可省略。 |
+| `--output-dir DIR` | 日志目录。独立 Parquet 的结果也写在这里。默认 `<repo>/outputs/run_XXXXXX`。 |
+| `--pattern GLOB` | 目录模式的输入文件名，默认 `observation.eeg.parquet`。 |
+| `--impedance FILE` | 仅单文件。目录模式自动读同目录的 `observation.eeg_impedance.parquet`。 |
+
+数据集模式把结果写回源目录，`--output-dir` 只收日志。预检失败不继续处理。退出码：`0` 全部成功，`1` 处理或质检失败，`2` 输入或配置错误。
+
+对应命令：`eeg-repair`、`eeg-filter`、`eeg-repair-inspect`（只读检查，可写配置模板）、`eeg-repair-qc`（检查空值、缺帧和时间戳）。`--dry-run` 只校验输入、坐标和输出路径。`eeg-repair-qc` 默认匹配 `observation.eeg_repair.parquet`。已发布但没有质量等级时，用 `scripts/backfill_eeg_quality.py` 回填 `info.json`，不重写 Parquet。
+
+修复参数：
 
 <table>
   <thead>
@@ -118,112 +157,53 @@ CPU 上的 EEG Parquet 修复工具。对头皮导联做预处理后另存结构
   </tbody>
 </table>
 
-## 环境
-
-Python 3.11 或 3.12。
-
-```bash
-uv sync --locked --extra dev --python 3.11
-source .venv/bin/activate
-```
-
-未使用 uv 时执行 `python -m pip install -e '.[dev]'`。该方式不读取锁文件，依赖版本可能与 CI 不一致。
-
-## 运行
-
-`scripts/repair.sh` 依次做预检、修复和结构质检，日志写入运行目录。
-
-```bash
-scripts/repair.sh <input>
-scripts/repair.sh <input> --config configs/provisional.yaml
-scripts/repair.sh <file.parquet> --config configs/eeg_repair.yaml --output-dir outputs/run1
-```
-
-`<input>` 可以是单个 Parquet、含 `meta/info.json` 的数据集目录，或一批数据集的上级目录。
-
-| 参数 | 作用 |
-| --- | --- |
-| `--config FILE` | 补充缺失元数据，或指定滤波参数与电极坐标。数据集模式可省略。 |
-| `--output-dir DIR` | 日志目录；独立 Parquet 的结果也写在这里。默认 `<repo>/outputs/run_XXXXXX`。 |
-| `--pattern GLOB` | 目录模式下的输入文件名，默认 `observation.eeg.parquet`。 |
-| `--impedance FILE` | 仅单文件模式。目录模式自动读取同目录的 `observation.eeg_impedance.parquet`。 |
-
-数据集模式把 `observation.eeg_repair.parquet` 写回源数据目录。此时 `--output-dir` 只接收日志。原始 `observation.eeg.parquet` 不覆盖。退出码：`0` 全部成功，`1` 处理或质检失败，`2` 输入或配置错误。预检失败时不继续修复。
-
-`scripts/filter.sh` 只对头皮通道做带通和陷波。它不减去时间中位数，不写质量等级。输入范围与 `scripts/repair.sh` 相同，参数为 `--config`、`--output-dir`、`--pattern`。结果文件名是 `observation.eeg_denoise.parquet`。数据集模式把它写回源目录，并在 `meta/info.json` 增加 `features.observation.eeg_denoise`；此时 `--output-dir` 只接收日志。独立 Parquet 写到 `--output-dir` 下的对应相对目录。源文件不覆盖。
-
-```bash
-scripts/filter.sh <input>
-scripts/filter.sh <input> --config configs/eeg_repair.yaml --output-dir outputs/filter1
-```
-
-| 命令 | 作用 |
-| --- | --- |
-| `eeg-repair` | 修复并写出结果 |
-| `eeg-filter` | 只做带通和陷波并写出结果 |
-| `eeg-repair-inspect` | 只读检查输入，并可生成配置模板 |
-| `eeg-repair-qc` | 检查空值、缺帧与时间戳，把 JSON 打到标准输出 |
-
-只检查、不修复：
-
-```bash
-eeg-repair-inspect <input.parquet> --write-config <config.yaml>
-eeg-repair <input> --config <config.yaml> --output-dir <dir> --dry-run
-eeg-repair-qc <dataset-dir>
-```
-
-`--dry-run` 只校验输入、坐标和输出路径，不写文件。`eeg-repair-qc` 不改输入，目录模式默认匹配 `observation.eeg_repair.parquet`。已发布但还没有质量等级时，用 `scripts/backfill_eeg_quality.py` 按同一套坏道规则回填 `info.json`，不重写 Parquet。
-
 ## 输入与输出
 
-每行一个采样点。`columns` 布局每个通道一列，处理范围由 `channels` 指定。`vector` 布局的 `signal_column` 为浮点 list，元素顺序与 `channels` 一致。不支持把整段波形放进一个单元格、ADC 整数，以及自动比例换算。
+每行一个采样点。`columns` 布局每个通道一列；`vector` 布局的 `signal_column` 是浮点 list，顺序与 `channels` 一致。不支持单格整段波形、ADC 整数，以及按幅度自动换算单位。
 
-`timestamp` 为 float64 秒，有限、非负且严格递增，采样率与配置一致。`episode_index` 为文件内恒定的 int64。时间戳沿用输入，不重建、不平移。字段名、类型、嵌套结构、schema 元数据、行数和非脑电字段均保留。辅助通道、发布条件和质量等级见上面的参数表。
+`timestamp` 为 float64 秒，有限、非负、严格递增，采样率与配置一致。`episode_index` 为文件内恒定的 int64。时间戳沿用输入。字段名、类型、嵌套、schema 元数据、行数和非脑电字段保留。辅助通道原样保留，名单见参数表。
 
-数据集模式成功后改这两个文件：
+数据集模式只改两处：
 
 | 文件 | 动作 |
 | --- | --- |
-| 与源文件同目录的 `observation.eeg_repair.parquet` | 新增修复后的脑电。 |
-| 该数据集的 `meta/info.json` | 增加 `features.observation.eeg_repair`，以及 `eeg_repair.quality` 和每条记录的 `quality`、`bad_rate`、`n_bad`、`n_scalp`。路径模板与主时钟字段保持不变。 |
+| 源目录中的 `observation.eeg_repair.parquet` 或 `observation.eeg_denoise.parquet` | 新增结果 |
+| `meta/info.json` | 修复增加 `features.observation.eeg_repair` 和质量字段；滤波增加 `features.observation.eeg_denoise`。路径模板和主时钟沿用源特征，单位写成实际使用值 |
 
-不改 `observation.eeg.parquet`、阻抗文件、`meta/episodes_stats.jsonl` 和其他模态。不另存坏道、ICA 或参数记录。存在旧式 `meta/stats.json` 时拒绝发布。处理中的临时目录在结束时删除。任一 episode 失败时，该数据集本次新增的修复文件会被删除，`meta/info.json` 恢复为运行前内容；同批其他数据集继续。
+质量字段为 `eeg_repair.quality`，以及每条记录的 `quality`、`bad_rate`、`n_bad`、`n_scalp`。不改源 EEG、阻抗、`meta/episodes_stats.jsonl` 和其他模态。不另存坏道、ICA 或参数记录。存在旧式 `meta/stats.json` 时拒绝发布。任一 episode 失败时，删除该数据集本次新增文件并恢复 `info.json`；同批其他数据集继续。
 
-独立 Parquet 的结果写到 `--output-dir`：成功为 `<stem>_repair.parquet`，失败追加 `quarantine.jsonl`。`scripts/repair.sh` 另在日志目录写入 `logs/preflight.log`、`logs/repair.log`、`logs/output_qc.json` 和 `logs/status.txt`。
+独立 Parquet 写到 `--output-dir` 下的对应相对目录：修复成功为 `<stem>_repair.parquet`，滤波成功为 `observation.eeg_denoise.parquet`，失败追加 `quarantine.jsonl`。`scripts/repair.sh` 另写 `logs/preflight.log`、`logs/repair.log`、`logs/output_qc.json`、`logs/status.txt`。
 
-发布前校验源文件 SHA-256。结果先写临时文件，回读通过后原子发布且不可覆盖。压缩 codec 与行组大小沿用源文件。结构质检通过或坐标覆盖完整，都不表示帽型定位或生理有效性已验证。ICA 异常可降级继续。
+发布前校验源文件 SHA-256。结果先写临时文件，回读通过后原子发布，且不覆盖已有结果。压缩 codec 与行组大小沿用源文件。
 
 ## 配置
 
-单位取 `uV`、`mV` 或 `V`，须来自元数据或配置，程序不根据幅度猜测。配置与元数据冲突时终止。缺少电极坐标时不终止处理，也不补猜位置；这些通道不参与球面插值。实测坐标 CSV 字段为 `name,x_m_mne,y_m_mne,z_m_mne`，单位米，路径相对于配置文件所在目录。
+单位取 `uV`、`mV` 或 `V`，必须来自元数据或配置，程序不根据幅度猜测。配置与元数据冲突时终止。缺电极坐标时不终止、不猜测位置，这些通道不参与球面插值。实测坐标 CSV 列为 `name,x_m_mne,y_m_mne,z_m_mne`，单位米，路径相对于配置文件。
+
+带 `meta/info.json` 的数据集从 `features.observation.eeg` 读取通道名、采样率和单位。
 
 | 文件 | 用途 |
 | --- | --- |
-| `configs/brainco_31.yaml` | 31 通道顺序与采样率。`unit` 为空时不能直接运行。 |
-| `configs/neuroscan_128.yaml` | 128 通道顺序与采样率。`unit` 为空时不能直接运行。标准模板缺少 `F11/F12/FT11/FT12/Cb1/Cb2/Cbz`。 |
-| `configs/eeg_8.template.yaml` | 8 通道接入模板。须填写通道、采样率、单位和坐标。 |
-| `configs/eeg_repair.yaml` | 250 Hz、µV 的参数示例，不代表特定设备的单位。 |
-| `configs/provisional.yaml` | 缺少完整实测坐标时的显式试运行配置。单位仍须按批次确认。 |
+| `configs/neuroscan_128.yaml` | Neuroscan 128 个头皮通道加 `VEOG`、`HEOG`、`EKG`、`EMG`。`unit` 为空时不能直接运行。标准模板缺少 `F11/F12/FT11/FT12/Cb1/Cb2/Cbz`。 |
+| `configs/provisional.yaml` | 显式试运行。通道名和采样率仍取元数据；单位须按批次确认。坐标不是个体实测，见 [来源](docs/PROVENANCE.md)。 |
 
-`configs/provisional.yaml` 使用仓库内暂定坐标。`F11/F12/FT11/FT12` 采用 [CURRY 公布的 PAN 坐标](https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html)，由毫米换算为米；`Cb1/Cb2/Cbz` 对应模板的 `I1/I2/Iz`。这些都不是个体实测。生成方式见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
+## 数据订正
 
-## 目录
+下面两支脚本会覆盖源文件，只用于 BrainCo 存量数据：列顺序已是硬件顺序，列名仍是旧名单。日常预处理用上面的两条入口。
 
-```text
-src/eeg_repair/                  命令、管线、算法、Parquet 与数据集契约
-configs/                         设备配置与暂定坐标
-scripts/repair.sh                预检、修复、质检
-scripts/filter.sh                预检、带通和陷波、质检
-scripts/backfill_eeg_quality.py  为已发布数据集回填质量等级
-docs/                            算法边界、来源、验证与流程图
-tests/                           数值、契约与异常路径
+```bash
+python scripts/fix_brainco_parquet_channel_names.py <file.parquet>
+python scripts/rerun_brainco_repair.py --index <index.json> --unit uV --jobs 8
 ```
 
-`outputs/` 只放本地运行日志和独立 Parquet 结果，已加入 `.gitignore`。提交前检查见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+第一支只改列名，不重排数据。第二支把 `info.json` 中的通道名、形状和空单位改成与 Parquet 一致，再覆盖已有的 `observation.eeg_repair.parquet`。
 
 ## 文档
 
-- [算法与实现边界](docs/ALGORITHM.md)
-- [来源与迁移](docs/PROVENANCE.md)
-- [验证记录](docs/VALIDATION.md)
+- [实现边界](docs/ALGORITHM.md)：和参考流程的差别，以及不在参数表里的判定
+- [坐标来源](docs/PROVENANCE.md)：暂定坐标怎么来、能证明什么
+- [验证范围](docs/VALIDATION.md)：测试覆盖了什么、没有覆盖什么
 - [流程图](docs/eeg_repair_flowchart.html)
+- [开发约定](CONTRIBUTING.md)
+
+`docs/reference/` 是迁入前的流程存档，不是执行入口。`outputs/` 已忽略。

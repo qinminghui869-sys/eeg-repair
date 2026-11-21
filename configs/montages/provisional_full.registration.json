@@ -8,7 +8,7 @@
   "source_url": "https://sccn.ucsd.edu/pipermail/eeglablist/2022/016586.html",
   "alias_source_url": "https://www.compumedicsneuroscan.com/Uploads/Curry7012ReleaseNotes.pdf#page=13",
   "source_sha256": "f0ff53be33655a878096ef53f1cb292f432a29ca7623c403ffbaabc1f11a7e73",
-  "csv_sha256": "86c7d5b58bdbefaddac6e5714ba8bc123932be4d7e3e125def3f4439c5afe3d8",
+  "csv_sha256": "3843bfefc31dd0e9e55e7b7ca727c890fdf0ba25ef10e7e8afb0048b160d9dfa",
   "common_channels": [
     "C3",
     "C4",
@@ -171,6 +171,6 @@
       0.02327016673235542
     ]
   },
-  "channels": 130,
+  "channels": 128,
   "limitation": "F11/F12/FT11/FT12 keep the published PAN coordinates in meters. Cb1/Cb2/Cbz are template aliases. Neither set is a measured 128-cap position. Registration residuals do not describe these seven sites."
 }

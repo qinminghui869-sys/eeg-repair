@@ -1,4 +1,6 @@
-"""BrainCo EEG 预处理函数。
+"""迁入前的 BrainCo 预处理函数存档，不是本仓库的执行入口。
+
+当前行为见 README 与 docs/ALGORITHM.md。
 
 顺序：去直流 → 带通+陷波 → 标坏道 → 同一 session 的干净片段拼接后做一次 ICA
 （肌电+眼电）→ 坏道插值 → 平均参考。

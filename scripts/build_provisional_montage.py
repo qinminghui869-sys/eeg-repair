@@ -61,13 +61,10 @@ def build():
     overlay.update({n: positions[target].copy() for n, target in aliases.items()})
     positions.update(overlay)
     names = []
-    for config in ("neuroscan_128.yaml", "brainco_31.yaml"):
-        channels = yaml.safe_load((ROOT / "configs" / config).read_text())["channels"]
-        for n in channels:
-            if n.upper() not in {"VEOG", "HEOG", "EKG", "EMG", "IO", "TRIG"} and n.upper() not in {
-                k.upper() for k in names
-            }:
-                names.append(n)
+    channels = yaml.safe_load((ROOT / "configs" / "neuroscan_128.yaml").read_text())["channels"]
+    for n in channels:
+        if n.upper() not in {"VEOG", "HEOG", "EKG", "EMG"} and n.upper() not in {k.upper() for k in names}:
+            names.append(n)
     lookup = {n.upper(): p for n, p in positions.items()}
     coords = np.array([lookup[n.upper()] for n in names])
     if not np.isfinite(coords).all() or len(np.unique(coords, axis=0)) != len(coords):
